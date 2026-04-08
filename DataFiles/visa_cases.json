@@ -1,0 +1,167 @@
+[
+  {
+    "case_id": "CASE001",
+    "employee_id": "E001",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.38,
+    "days_until_assignment_start": 28,
+    "documents_complete": false,
+    "missing_documents": ["employer_support_letter", "prior_approval_notice"],
+    "last_update": "2026-06-03",
+    "notes": "Initial processing. Missing docs flagged by consulate. Start date at risk."
+  },
+  {
+    "case_id": "CASE002",
+    "employee_id": "E002",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.71,
+    "days_until_assignment_start": 42,
+    "documents_complete": false,
+    "missing_documents": ["tax_clearance", "employer_petition", "medical_exam"],
+    "last_update": "2026-07-04",
+    "notes": "H1B processing delayed. Multiple missing documents. High probability of start date miss."
+  },
+  {
+    "case_id": "CASE003",
+    "employee_id": "E003",
+    "visa_status": "approved",
+    "visa_delay_probability": 0.05,
+    "days_until_assignment_start": 62,
+    "documents_complete": true,
+    "missing_documents": [],
+    "last_update": "2026-06-30",
+    "notes": "L1A approved via premium processing. No issues."
+  },
+  {
+    "case_id": "CASE004",
+    "employee_id": "E004",
+    "visa_status": "approved",
+    "visa_delay_probability": 0.08,
+    "days_until_assignment_start": 45,
+    "documents_complete": true,
+    "missing_documents": [],
+    "last_update": "2026-06-01",
+    "notes": "ICT visa approved. Clean case."
+  },
+  {
+    "case_id": "CASE005",
+    "employee_id": "E005",
+    "visa_status": "pending_consulate",
+    "visa_delay_probability": 0.82,
+    "days_until_assignment_start": 14,
+    "documents_complete": false,
+    "missing_documents": ["consular_interview_scheduled", "police_clearance"],
+    "last_update": "2026-06-06",
+    "notes": "CRITICAL: Consular interview not yet scheduled. Only 14 days to start. Escalation required immediately."
+  },
+  {
+    "case_id": "CASE006",
+    "employee_id": "E006",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.44,
+    "days_until_assignment_start": 55,
+    "documents_complete": false,
+    "missing_documents": ["salary_evidence", "sponsor_licence_check"],
+    "last_update": "2026-08-07",
+    "notes": "Skilled Worker visa in processing. Sponsor licence renewal pending — may cause delay."
+  },
+  {
+    "case_id": "CASE007",
+    "employee_id": "E007",
+    "visa_status": "approved",
+    "visa_delay_probability": 0.04,
+    "days_until_assignment_start": 58,
+    "documents_complete": true,
+    "missing_documents": [],
+    "last_update": "2026-07-04",
+    "notes": "TN approved at border entry. No further action needed."
+  },
+  {
+    "case_id": "CASE008",
+    "employee_id": "E008",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.52,
+    "days_until_assignment_start": 21,
+    "documents_complete": false,
+    "missing_documents": ["i-129_petition_receipt"],
+    "last_update": "2026-06-19",
+    "notes": "Petition receipt not yet received. 21 days to start. Moderate-high delay risk."
+  },
+  {
+    "case_id": "CASE009",
+    "employee_id": "E009",
+    "visa_status": "approved",
+    "visa_delay_probability": 0.06,
+    "days_until_assignment_start": 70,
+    "documents_complete": true,
+    "missing_documents": [],
+    "last_update": "2026-08-07",
+    "notes": "Visa approved early. Plenty of lead time."
+  },
+  {
+    "case_id": "CASE010",
+    "employee_id": "E010",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.88,
+    "days_until_assignment_start": 18,
+    "documents_complete": false,
+    "missing_documents": ["l1b_petition", "specialty_occupation_evidence", "itinerary", "tax_clearance"],
+    "last_update": "2026-06-13",
+    "notes": "CRITICAL: Four missing documents, 18 days to start. CN-US route has 75-day typical processing. Assignment start delay highly probable."
+  },
+  {
+    "case_id": "CASE011",
+    "employee_id": "E011",
+    "visa_status": "approved",
+    "visa_delay_probability": 0.07,
+    "days_until_assignment_start": 65,
+    "documents_complete": true,
+    "missing_documents": [],
+    "last_update": "2026-07-17",
+    "notes": "Schengen business visa approved. Clean case."
+  },
+  {
+    "case_id": "CASE012",
+    "employee_id": "E012",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.61,
+    "days_until_assignment_start": 22,
+    "documents_complete": false,
+    "missing_documents": ["ds160_confirmation", "visa_appointment"],
+    "last_update": "2026-06-03",
+    "notes": "DS-160 not yet submitted. Visa appointment not booked. Escalating risk profile."
+  },
+  {
+    "case_id": "CASE013",
+    "employee_id": "E013",
+    "visa_status": "approved",
+    "visa_delay_probability": 0.05,
+    "days_until_assignment_start": 75,
+    "documents_complete": true,
+    "missing_documents": [],
+    "last_update": "2026-07-18",
+    "notes": "L1B approved. Comfortable lead time."
+  },
+  {
+    "case_id": "CASE014",
+    "employee_id": "E014",
+    "visa_status": "in_processing",
+    "visa_delay_probability": 0.47,
+    "days_until_assignment_start": 35,
+    "documents_complete": false,
+    "missing_documents": ["salary_threshold_confirmation"],
+    "last_update": "2026-06-15",
+    "notes": "EP application in progress. Salary threshold confirmation pending MOM review."
+  },
+  {
+    "case_id": "CASE015",
+    "employee_id": "E015",
+    "visa_status": "pending_consulate",
+    "visa_delay_probability": 0.79,
+    "days_until_assignment_start": 20,
+    "documents_complete": false,
+    "missing_documents": ["consular_appointment", "security_clearance", "employer_letter"],
+    "last_update": "2026-07-16",
+    "notes": "SA-US route has extended security clearance requirements. 20 days to start is insufficient for typical processing."
+  }
+]

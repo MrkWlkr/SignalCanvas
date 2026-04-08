@@ -1,0 +1,101 @@
+[
+  {
+    "policy_id": "P_US_UK_01",
+    "label": "US-UK Short Term Standard",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 60,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": false,
+    "cost_of_living_allowance": false,
+    "housing_allowance": false,
+    "notes": "Standard short-term policy. Extensions above 90 days require VP approval and legal review."
+  },
+  {
+    "policy_id": "P_US_IN_01",
+    "label": "US-India Long Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 45,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": true,
+    "cost_of_living_allowance": true,
+    "housing_allowance": true,
+    "notes": "Long-term policy includes full expat package. Payroll review triggered early due to no SSA."
+  },
+  {
+    "policy_id": "P_US_DE_01",
+    "label": "US-Germany Short Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 60,
+    "requires_preapproval_for_extension": false,
+    "allowed_family_travel": false,
+    "cost_of_living_allowance": false,
+    "housing_allowance": false,
+    "notes": "Low-risk route. Extensions below 120 days do not require formal preapproval."
+  },
+  {
+    "policy_id": "P_UK_FR_01",
+    "label": "UK-France Short Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 45,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": false,
+    "cost_of_living_allowance": false,
+    "housing_allowance": false,
+    "notes": "Post-Brexit complexity. Extensions require legal sign-off due to ICT route constraints."
+  },
+  {
+    "policy_id": "P_US_JP_01",
+    "label": "US-Japan Short Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 60,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": false,
+    "cost_of_living_allowance": false,
+    "housing_allowance": false,
+    "notes": "E3 visa category requires consular processing — allow extra lead time."
+  },
+  {
+    "policy_id": "P_UK_AE_01",
+    "label": "UK-UAE Long Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 30,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": true,
+    "cost_of_living_allowance": true,
+    "housing_allowance": true,
+    "notes": "No treaty coverage. Shadow payroll required above 30 days. High compliance policy."
+  },
+  {
+    "policy_id": "P_US_MX_01",
+    "label": "US-Mexico TN",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 60,
+    "requires_preapproval_for_extension": false,
+    "allowed_family_travel": false,
+    "cost_of_living_allowance": false,
+    "housing_allowance": false,
+    "notes": "TN visa renewable at border. Lowest compliance overhead of all routes."
+  },
+  {
+    "policy_id": "P_US_CN_01",
+    "label": "US-China Long Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 30,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": true,
+    "cost_of_living_allowance": true,
+    "housing_allowance": true,
+    "notes": "Highest-complexity policy. No SSA, no treaty. Shadow payroll from day 30. Full expat package required."
+  },
+  {
+    "policy_id": "P_SG_UK_01",
+    "label": "Singapore-UK Long Term",
+    "max_short_term_assignment_days": 90,
+    "requires_payroll_review_above_days": 60,
+    "requires_preapproval_for_extension": true,
+    "allowed_family_travel": true,
+    "cost_of_living_allowance": true,
+    "housing_allowance": false,
+    "notes": "Employment Pass salary threshold must be maintained. Cost-of-living supplement in place."
+  }
+]

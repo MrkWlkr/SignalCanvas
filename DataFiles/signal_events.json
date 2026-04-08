@@ -1,0 +1,273 @@
+[
+  {
+    "event_id": "EV001",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 0,
+    "event_type": "assignment_created",
+    "entity_id": "E001",
+    "payload": {
+      "employee_name": "Alex Turner",
+      "route": "UK \u2192 US",
+      "duration_days": 120,
+      "start_date": "2026-07-01"
+    }
+  },
+  {
+    "event_id": "EV002",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 15,
+    "event_type": "visa_delay_probability_changed",
+    "entity_id": "CASE001",
+    "payload": {
+      "old_value": 0.22,
+      "new_value": 0.38,
+      "reason": "Consulate flagged incomplete employer support letter"
+    }
+  },
+  {
+    "event_id": "EV003",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 30,
+    "event_type": "document_missing",
+    "entity_id": "CASE001",
+    "payload": {
+      "document": "prior_approval_notice",
+      "impact": "Processing cannot resume until submitted",
+      "days_to_start": 28
+    }
+  },
+  {
+    "event_id": "EV004",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 45,
+    "event_type": "policy_exception_triggered",
+    "entity_id": "E001",
+    "payload": {
+      "policy_id": "P_US_UK_01",
+      "reason": "Planned duration of 120 days exceeds policy max of 90 days",
+      "requires_vp_approval": true
+    }
+  },
+  {
+    "event_id": "EV005",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 60,
+    "event_type": "tax_threshold_proximity_warning",
+    "entity_id": "E001",
+    "payload": {
+      "threshold_days": 183,
+      "planned_days": 120,
+      "days_remaining_to_threshold": 63,
+      "warning": "Assignment plus any extension would approach 183-day tax trigger"
+    }
+  },
+  {
+    "event_id": "EV006",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 75,
+    "event_type": "payroll_alignment_risk_increased",
+    "entity_id": "E001",
+    "payload": {
+      "previous_risk": "low",
+      "new_risk": "medium",
+      "reason": "Host payroll not started. Day-60 review threshold approaching in 32 days."
+    }
+  },
+  {
+    "event_id": "EV007",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 90,
+    "event_type": "visa_delay_probability_changed",
+    "entity_id": "CASE001",
+    "payload": {
+      "old_value": 0.38,
+      "new_value": 0.61,
+      "reason": "Second document gap identified. Processing suspended pending resubmission."
+    }
+  },
+  {
+    "event_id": "EV101",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 0,
+    "event_type": "assignment_created",
+    "entity_id": "E005",
+    "payload": {
+      "employee_name": "Kenji Tanaka",
+      "route": "JP \u2192 US",
+      "duration_days": 110,
+      "start_date": "2026-06-20"
+    }
+  },
+  {
+    "event_id": "EV102",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 10,
+    "event_type": "visa_status_flagged",
+    "entity_id": "CASE005",
+    "payload": {
+      "status": "pending_consulate",
+      "days_to_start": 14,
+      "consular_interview_scheduled": false,
+      "note": "Interview not yet scheduled. Typical scheduling lag is 10-15 days."
+    }
+  },
+  {
+    "event_id": "EV103",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 20,
+    "event_type": "document_missing",
+    "entity_id": "CASE005",
+    "payload": {
+      "document": "police_clearance",
+      "impact": "Required before consular interview. Processing takes 7-10 days.",
+      "days_to_start": 14
+    }
+  },
+  {
+    "event_id": "EV104",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 30,
+    "event_type": "payroll_alignment_risk_increased",
+    "entity_id": "E005",
+    "payload": {
+      "previous_risk": "medium",
+      "new_risk": "critical",
+      "reason": "Host payroll not started with 14 days to assignment. Cannot be ready in time."
+    }
+  },
+  {
+    "event_id": "EV105",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 40,
+    "event_type": "policy_exception_triggered",
+    "entity_id": "E005",
+    "payload": {
+      "policy_id": "P_US_JP_01",
+      "reason": "Assignment of 110 days exceeds 90-day short-term policy. No pre-approval on file.",
+      "requires_vp_approval": true
+    }
+  },
+  {
+    "event_id": "EV106",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 50,
+    "event_type": "tax_threshold_proximity_warning",
+    "entity_id": "E005",
+    "payload": {
+      "threshold_days": 183,
+      "planned_days": 110,
+      "days_remaining_to_threshold": 73,
+      "warning": "110-day assignment plus any additional travel days risks crossing 183-day threshold this tax year"
+    }
+  },
+  {
+    "event_id": "EV107",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 60,
+    "event_type": "visa_delay_probability_changed",
+    "entity_id": "CASE005",
+    "payload": {
+      "old_value": 0.82,
+      "new_value": 0.93,
+      "reason": "Police clearance submission missed deadline. Consular slot unavailable before start date."
+    }
+  },
+  {
+    "event_id": "EV108",
+    "scenario_id": "SCENARIO_CRITICAL",
+    "timestamp_offset_sec": 70,
+    "event_type": "escalation_recommended",
+    "entity_id": "E005",
+    "payload": {
+      "recommended_by": "agent",
+      "actions": [
+        "Notify VP and mobility advisor immediately",
+        "Assess start date delay feasibility with business unit",
+        "Initiate emergency payroll hold",
+        "Explore alternative visa category (B1/B2 short entry)"
+      ]
+    }
+  },
+  {
+    "event_id": "EV201",
+    "scenario_id": "SCENARIO_HEALTHY",
+    "timestamp_offset_sec": 0,
+    "event_type": "assignment_created",
+    "entity_id": "E003",
+    "payload": {
+      "employee_name": "Marcus Weber",
+      "route": "DE \u2192 US",
+      "duration_days": 85,
+      "start_date": "2026-09-01"
+    }
+  },
+  {
+    "event_id": "EV202",
+    "scenario_id": "SCENARIO_HEALTHY",
+    "timestamp_offset_sec": 15,
+    "event_type": "visa_approved",
+    "entity_id": "CASE003",
+    "payload": {
+      "visa_category": "L1A",
+      "processing_method": "premium",
+      "approved_date": "2026-06-30",
+      "days_before_start": 62
+    }
+  },
+  {
+    "event_id": "EV203",
+    "scenario_id": "SCENARIO_HEALTHY",
+    "timestamp_offset_sec": 30,
+    "event_type": "payroll_status_updated",
+    "entity_id": "E003",
+    "payload": {
+      "host_payroll_status": "in_progress",
+      "alignment_risk": "low",
+      "note": "Host payroll setup initiated on schedule."
+    }
+  },
+  {
+    "event_id": "EV204",
+    "scenario_id": "SCENARIO_HEALTHY",
+    "timestamp_offset_sec": 45,
+    "event_type": "policy_check_passed",
+    "entity_id": "E003",
+    "payload": {
+      "policy_id": "P_US_DE_01",
+      "duration_days": 85,
+      "max_allowed": 90,
+      "within_limit": true,
+      "preapproval_required": false
+    }
+  },
+  {
+    "event_id": "EV205",
+    "scenario_id": "SCENARIO_HEALTHY",
+    "timestamp_offset_sec": 60,
+    "event_type": "tax_check_passed",
+    "entity_id": "E003",
+    "payload": {
+      "threshold_days": 183,
+      "planned_days": 85,
+      "headroom_days": 98,
+      "risk": "low"
+    }
+  },
+  {
+    "event_id": "EV206",
+    "scenario_id": "SCENARIO_HEALTHY",
+    "timestamp_offset_sec": 75,
+    "event_type": "assignment_cleared",
+    "entity_id": "E003",
+    "payload": {
+      "cleared_domains": [
+        "immigration",
+        "tax",
+        "payroll",
+        "policy"
+      ],
+      "confidence": 0.96,
+      "note": "All checks passed. Assignment ready to proceed."
+    }
+  }
+]
