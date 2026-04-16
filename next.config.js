@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/scenario": ["./data/**/*"],
+      "/api/advance": ["./data/**/*"],
+      "/api/state": ["./data/**/*"],
+      "/api/reset": ["./data/**/*"],
+    },
+  },
 };
 
 module.exports = nextConfig;
