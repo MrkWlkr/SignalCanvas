@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Signal Canvas — Agentic Decision Intelligence",
+  title: "Signal Canvas — Human Oversight for Agentic AI",
   description:
-    "A live demo of multi-round Claude tool-use agents processing sequential signals and producing structured risk evaluations in real time.",
+    "Signal Canvas is the observability layer for agentic AI — making agent decisions transparent, traceable, and governable in high-stakes operational environments. Live demo powered by Claude and Next.js.",
 };
 
 export default function RootLayout({

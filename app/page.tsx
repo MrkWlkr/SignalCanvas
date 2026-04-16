@@ -34,8 +34,7 @@ function HeroSection() {
         </h1>
 
         <p className="text-xl sm:text-2xl text-gray-300 mb-3 font-medium leading-snug">
-          The observability layer for agentic AI —<br className="hidden sm:block" />
-          so humans stay in control as agents get more capable.
+          Human oversight for agentic AI.
         </p>
 
         <p className="text-base text-gray-500 mb-6 max-w-xl mx-auto leading-relaxed">
@@ -128,10 +127,7 @@ function FrameworkSection() {
 
         <div className="text-center space-y-3 mb-10">
           <p className="text-sm text-gray-500">
-            This demo uses enterprise compliance workflow data as the proof point. The reasoning engine is domain-agnostic.
-          </p>
-          <p className="text-sm text-gray-500">
-            The same framework applies to any operational environment where AI agents are making consequential decisions that humans need to understand, audit, and govern.
+            This demo uses enterprise compliance workflow data as the proof point. The reasoning engine is domain-agnostic — the same framework applies to any operational environment where AI agents are making consequential decisions that humans need to understand, audit, and govern.
           </p>
         </div>
 
@@ -180,7 +176,8 @@ function CtaSection() {
         <p className="text-gray-400 leading-relaxed mb-8">
           Signal Canvas is a working prototype demonstrating a domain-agnostic agentic AI
           observability framework. The compliance scenario is the proof point — the architecture
-          is built to transfer.
+          is built to transfer to any regulated operational domain where complex multi-system
+          workflows are currently managed by human specialists.
         </p>
         <p className="text-gray-400 leading-relaxed mb-8">
           If you are thinking about AI agent governance, operational observability, or decision
