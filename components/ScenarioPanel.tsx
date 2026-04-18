@@ -23,12 +23,20 @@ interface Props {
   advancing: boolean;
   playing: boolean;
   activeScenario: string;
+  currentPath: string;
+  hasPendingIntervention: boolean;
   onScenarioChange: (id: string) => void;
   onAdvance: () => void;
   onReset: () => void;
   onPlay: () => void;
   onPause: () => void;
 }
+
+// Human-readable path labels — purely display, no domain logic
+const PATH_LABELS: Record<string, string> = {
+  default: "Default path",
+  intervention_resolved: "Intervention resolved",
+};
 
 export default function ScenarioPanel({
   scenarioData,
@@ -37,6 +45,8 @@ export default function ScenarioPanel({
   advancing,
   playing,
   activeScenario,
+  currentPath,
+  hasPendingIntervention,
   onScenarioChange,
   onAdvance,
   onReset,
@@ -78,6 +88,21 @@ export default function ScenarioPanel({
               </div>
             </button>
           ))}
+        </div>
+        {/* Active path indicator */}
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span
+            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+              currentPath === "intervention_resolved" ? "bg-green-500" : "bg-gray-600"
+            }`}
+          />
+          <span
+            className={`text-xs ${
+              currentPath === "intervention_resolved" ? "text-green-500" : "text-gray-600"
+            }`}
+          >
+            {PATH_LABELS[currentPath] ?? currentPath}
+          </span>
         </div>
       </div>
 
@@ -233,7 +258,7 @@ export default function ScenarioPanel({
         <div className="flex gap-2">
           <button
             onClick={onAdvance}
-            disabled={advancing || playing || complete || loading}
+            disabled={advancing || playing || complete || loading || hasPendingIntervention}
             className="flex-1 py-2.5 px-4 rounded-md text-sm font-semibold bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white transition-colors flex items-center justify-center gap-2"
           >
             {advancing && !playing ? (
@@ -241,6 +266,8 @@ export default function ScenarioPanel({
                 <Spinner />
                 Analyzing…
               </>
+            ) : hasPendingIntervention ? (
+              "Paused"
             ) : complete ? (
               "Complete"
             ) : (
@@ -250,7 +277,7 @@ export default function ScenarioPanel({
 
           <button
             onClick={playing ? onPause : onPlay}
-            disabled={complete || loading}
+            disabled={complete || loading || hasPendingIntervention}
             title={playing ? "Pause simulation" : "Play simulation"}
             className={`py-2.5 px-3 rounded-md text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
               playing

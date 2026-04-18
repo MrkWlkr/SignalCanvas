@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { domainConfig } from "@/lib/domain-config";
+import type { InterventionThresholds, InterventionRule } from "@/lib/domain-config";
 import { TOOL_DEFINITIONS, executeTool, getRecentSignals } from "@/lib/tools";
-import { loadSignalEvents, loadEmployees } from "@/lib/data";
-import { recordEvaluation, getState } from "@/lib/state";
-import type { ToolCallTrace, RiskEvaluation } from "@/lib/state";
+import { loadSignalEventsFromPath, loadEmployees } from "@/lib/data";
+import {
+  recordEvaluation,
+  recordPendingIntervention,
+  getState,
+} from "@/lib/state";
+import type { EvaluatorOutput, EvaluationRecord, ToolCallTrace, PendingIntervention } from "@/types";
 import {
   getEmployee,
   getVisaCase,
@@ -15,6 +20,112 @@ import {
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Generic threshold evaluator — zero mobility-specific logic lives here.
+// Operates on the InterventionThresholds shape from any DomainConfig.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function matchesRule(evaluation: EvaluatorOutput, rule: InterventionRule): boolean {
+  const rawValue = (evaluation as unknown as Record<string, unknown>)[rule.field];
+
+  switch (rule.operator) {
+    case "is": {
+      // If rule.value is an array, treat as "field value is one of"
+      if (Array.isArray(rule.value)) return rule.value.includes(rawValue as string);
+      return rawValue === rule.value;
+    }
+    case "is_not": {
+      if (Array.isArray(rule.value)) return !rule.value.includes(rawValue as string);
+      return rawValue !== rule.value;
+    }
+    case "greater_than": {
+      // If field value is an array, compare array.length
+      const numeric = Array.isArray(rawValue)
+        ? rawValue.length
+        : (rawValue as number);
+      return numeric > (rule.value as number);
+    }
+    case "less_than": {
+      const numeric = Array.isArray(rawValue)
+        ? rawValue.length
+        : (rawValue as number);
+      return numeric < (rule.value as number);
+    }
+    case "includes": {
+      // Array field: non-empty check (any element present)
+      if (Array.isArray(rawValue)) return rawValue.length > 0;
+      // String field: substring check
+      if (typeof rawValue === "string") return rawValue.includes(rule.value as string);
+      return false;
+    }
+    default:
+      return false;
+  }
+}
+
+function matchesGroup(evaluation: EvaluatorOutput, group: InterventionRule[]): boolean {
+  return group.every((rule) => matchesRule(evaluation, rule));
+}
+
+// Returns the final human_review_required decision after applying all threshold groups.
+// Priority order: always_review (highest) > autonomous_when > review_when > Claude's own value.
+function evaluateInterventionThresholds(
+  evaluation: EvaluatorOutput,
+  thresholds: InterventionThresholds
+): boolean {
+  const alwaysReview = thresholds.always_review.some((group) =>
+    matchesGroup(evaluation, group)
+  );
+  if (alwaysReview) return true;
+
+  const isAutonomous = thresholds.autonomous_when.some((group) =>
+    matchesGroup(evaluation, group)
+  );
+  if (isAutonomous) return false;
+
+  const reviewWhen = thresholds.review_when.some((group) =>
+    matchesGroup(evaluation, group)
+  );
+  if (reviewWhen) return true;
+
+  // Fall back to Claude's own judgement
+  return evaluation.human_review_required;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Normalise raw Claude JSON into a fully-typed EvaluatorOutput with defaults
+// ─────────────────────────────────────────────────────────────────────────────
+
+function normalizeEvaluatorOutput(raw: Record<string, unknown>): EvaluatorOutput {
+  return {
+    risk_level: (raw.risk_level as EvaluatorOutput["risk_level"]) ?? "medium",
+    confidence: (raw.confidence as number) ?? 0.5,
+    affected_domains: (raw.affected_domains as string[]) ?? [],
+    recommended_actions: (raw.recommended_actions as string[]) ?? [],
+    reasoning_summary: (raw.reasoning_summary as string) ?? "",
+    next_checks: (raw.next_checks as string[]) ?? [],
+    decision_type:
+      (raw.decision_type as EvaluatorOutput["decision_type"]) ?? "recommendation",
+    impact_magnitude:
+      (raw.impact_magnitude as EvaluatorOutput["impact_magnitude"]) ?? "medium",
+    reversibility:
+      (raw.reversibility as EvaluatorOutput["reversibility"]) ?? "reversible",
+    human_review_required: (raw.human_review_required as boolean) ?? false,
+    human_review_reason: (raw.human_review_reason as string) ?? "",
+    novel_factors: (raw.novel_factors as string[]) ?? [],
+    causal_chain: (raw.causal_chain as string[]) ?? [],
+    downstream_dependencies: (raw.downstream_dependencies as string[]) ?? [],
+    frequency_context: (raw.frequency_context as EvaluatorOutput["frequency_context"]) ?? {
+      decision_type_seen_before: false,
+      note: "",
+    },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/advance
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -27,7 +138,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "scenarioId is required" }, { status: 400 });
   }
 
-  const allEvents = loadSignalEvents();
+  const currentState = getState(scenarioId);
+
+  // Guard: refuse to advance while an intervention is pending
+  if (currentState?.pendingIntervention) {
+    return NextResponse.json(
+      { error: "Intervention pending — resolve before advancing" },
+      { status: 400 }
+    );
+  }
+
+  // Resolve the active events file for this scenario + path
+  const currentPath = currentState?.currentPath ?? "default";
+  const eventsFilePath =
+    domainConfig.scenarioPaths[scenarioId]?.[currentPath] ??
+    domainConfig.scenarioPaths[scenarioId]?.["default"];
+
+  if (!eventsFilePath) {
+    return NextResponse.json(
+      { error: `No events file configured for scenario: ${scenarioId}` },
+      { status: 404 }
+    );
+  }
+
+  const allEvents = loadSignalEventsFromPath(eventsFilePath);
   const scenarioEvents = allEvents.filter((e) => e.scenario_id === scenarioId);
   const totalEvents = scenarioEvents.length;
 
@@ -38,7 +172,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const currentState = getState(scenarioId);
   const eventIndex =
     requestedIndex !== undefined
       ? requestedIndex
@@ -57,7 +190,7 @@ export async function POST(request: NextRequest) {
 
   const event = scenarioEvents[eventIndex];
 
-  // FIX 1 — Eagerly load the full employee profile as baseline context
+  // Eagerly load the full employee profile as baseline context
   const allEmployees = loadEmployees();
   const employee = allEmployees.find((e) => e.scenario_id === scenarioId);
 
@@ -82,7 +215,6 @@ PAYROLL STATUS:
 ${JSON.stringify(payroll, null, 2)}`;
   }
 
-  // FIX 4 — Build a rich, context-aware user message
   const priorEventTypes =
     eventIndex > 0
       ? scenarioEvents
@@ -117,7 +249,7 @@ Using the baseline profile above and the available tools, investigate the impact
   ];
 
   const toolCallTrace: ToolCallTrace[] = [];
-  let finalEvaluation: RiskEvaluation | null = null;
+  let finalEvaluation: EvaluatorOutput | null = null;
 
   while (true) {
     const response = await client.messages.create({
@@ -143,16 +275,14 @@ Using the baseline profile above and the available tools, investigate the impact
           const bareMatch = textBlock.text.match(/\{[\s\S]*\}/);
           const jsonStr = fenceMatch ? fenceMatch[1] : bareMatch ? bareMatch[0] : null;
           if (!jsonStr) throw new Error("No JSON found in response");
-          finalEvaluation = JSON.parse(jsonStr) as RiskEvaluation;
+          const rawParsed = JSON.parse(jsonStr) as Record<string, unknown>;
+          finalEvaluation = normalizeEvaluatorOutput(rawParsed);
         } catch {
-          finalEvaluation = {
+          finalEvaluation = normalizeEvaluatorOutput({
             risk_level: "medium",
             confidence: 0.5,
-            affected_domains: [],
-            recommended_actions: [],
             reasoning_summary: textBlock.text,
-            next_checks: [],
-          };
+          });
         }
       }
       break;
@@ -163,12 +293,13 @@ Using the baseline profile above and the available tools, investigate the impact
     for (const toolUse of toolUseBlocks) {
       const toolInput = toolUse.input as Record<string, unknown>;
 
-      // FIX 2 — Intercept get_recent_signals to cap at current event index
       let toolResult: unknown;
       if (toolUse.name === "get_recent_signals") {
+        // Intercept to cap at current event index and use path-specific file
         toolResult = getRecentSignals(
           toolInput.scenario_id as string,
-          eventIndex
+          eventIndex,
+          eventsFilePath
         );
       } else {
         toolResult = executeTool(toolUse.name, toolInput);
@@ -195,24 +326,80 @@ Using the baseline profile above and the available tools, investigate the impact
     }
   }
 
-  const updatedState = recordEvaluation(scenarioId, totalEvents, {
+  if (!finalEvaluation) {
+    return NextResponse.json({ error: "Agent returned no evaluation" }, { status: 500 });
+  }
+
+  // ── Threshold evaluation ──────────────────────────────────────────────────
+  const requiresIntervention = evaluateInterventionThresholds(
+    finalEvaluation,
+    domainConfig.interventionThresholds
+  );
+
+  if (requiresIntervention) {
+    // Paused path: save as pending, do NOT advance event index
+    const record: EvaluationRecord = {
+      event_index: eventIndex,
+      event_id: event.event_id,
+      event_type: event.event_type,
+      timestamp: new Date().toISOString(),
+      evaluation: finalEvaluation,
+      tool_trace: toolCallTrace,
+      status: "pending_human_review",
+      path: currentPath,
+    };
+
+    const pending: PendingIntervention = {
+      event_id: event.event_id,
+      event_index: eventIndex,
+      evaluation: finalEvaluation,
+    };
+
+    const updatedState = recordPendingIntervention(
+      scenarioId,
+      totalEvents,
+      record,
+      pending
+    );
+
+    return NextResponse.json({
+      requires_intervention: true,
+      event,
+      evaluation: finalEvaluation,
+      intervention_options: domainConfig.interventionOptions,
+      progress: {
+        current_event_index: eventIndex,
+        next_event_index: eventIndex, // stays — agent paused
+        total_events: updatedState.totalEvents,
+        complete: false,
+      },
+    });
+  }
+
+  // Autonomous path: save and advance
+  const record: EvaluationRecord = {
     event_index: eventIndex,
     event_id: event.event_id,
     event_type: event.event_type,
     timestamp: new Date().toISOString(),
-    evaluation: finalEvaluation!,
+    evaluation: finalEvaluation,
     tool_trace: toolCallTrace,
-  });
+    status: "autonomous",
+    path: currentPath,
+  };
+
+  const updatedState = recordEvaluation(scenarioId, totalEvents, record);
 
   return NextResponse.json({
+    requires_intervention: false,
     event,
     evaluation: finalEvaluation,
     tool_trace: toolCallTrace,
     progress: {
       current_event_index: eventIndex,
       next_event_index: updatedState.currentEventIndex,
-      total_events: totalEvents,
-      complete: updatedState.currentEventIndex >= totalEvents,
+      total_events: updatedState.totalEvents,
+      complete: updatedState.currentEventIndex >= updatedState.totalEvents,
     },
   });
 }

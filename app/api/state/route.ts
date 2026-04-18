@@ -1,20 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getState, initState } from "@/lib/state";
-import { loadSignalEvents } from "@/lib/data";
+import { loadSignalEventsFromPath } from "@/lib/data";
+import { domainConfig } from "@/lib/domain-config";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const scenarioId = searchParams.get("scenarioId") ?? "SCENARIO_ESCALATING";
 
-  const allEvents = loadSignalEvents();
-  const totalEvents = allEvents.filter((e) => e.scenario_id === scenarioId).length;
+  const existingState = getState(scenarioId);
+  const currentPath = existingState?.currentPath ?? "default";
 
-  // Return existing state or an empty initial state
-  const state = getState(scenarioId) ?? initState(scenarioId, totalEvents);
+  // Derive total events from the current path's file
+  const eventsFilePath =
+    domainConfig.scenarioPaths[scenarioId]?.[currentPath] ??
+    domainConfig.scenarioPaths[scenarioId]?.["default"];
 
-  const latest = state.evaluations.length > 0
-    ? state.evaluations[state.evaluations.length - 1]
-    : null;
+  const totalEvents = eventsFilePath
+    ? loadSignalEventsFromPath(eventsFilePath).filter(
+        (e) => e.scenario_id === scenarioId
+      ).length
+    : 0;
+
+  const state = existingState ?? initState(scenarioId, totalEvents);
+
+  const latest =
+    state.evaluations.length > 0
+      ? state.evaluations[state.evaluations.length - 1]
+      : null;
 
   return NextResponse.json({
     scenario_id: state.scenarioId,
@@ -24,5 +36,7 @@ export async function GET(request: NextRequest) {
     evaluation_count: state.evaluations.length,
     latest_evaluation: latest,
     evaluations: state.evaluations,
+    current_path: state.currentPath,
+    pending_intervention: state.pendingIntervention,
   });
 }

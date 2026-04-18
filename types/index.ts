@@ -37,13 +37,36 @@ export interface SignalEvent {
   payload: Record<string, unknown>;
 }
 
-export interface RiskEvaluation {
+// Full evaluator output schema — all fields populated by Claude
+export interface EvaluatorOutput {
+  // Original fields
   risk_level: RiskLevel;
   confidence: number;
   affected_domains: string[];
   recommended_actions: string[];
   reasoning_summary: string;
   next_checks: string[];
+  // New intervention-routing fields
+  decision_type: "autonomous" | "recommendation" | "escalation" | "pause_for_human";
+  impact_magnitude: "low" | "medium" | "high" | "critical";
+  reversibility: "reversible" | "partially_reversible" | "irreversible";
+  human_review_required: boolean;
+  human_review_reason: string;
+  novel_factors: string[];
+  causal_chain: string[];
+  downstream_dependencies: string[];
+  frequency_context: {
+    decision_type_seen_before: boolean;
+    note: string;
+  };
+}
+
+export interface HumanDecision {
+  option_id: string;
+  option_label: string;
+  decision_id?: string;
+  modified_actions?: string[];
+  timestamp: string;
 }
 
 export interface ToolCallTrace {
@@ -57,8 +80,17 @@ export interface EvaluationRecord {
   event_id: string;
   event_type: string;
   timestamp: string;
-  evaluation: RiskEvaluation;
+  evaluation: EvaluatorOutput;
   tool_trace: ToolCallTrace[];
+  status: "autonomous" | "pending_human_review" | "human_reviewed";
+  path: string;
+  human_decision?: HumanDecision;
+}
+
+export interface PendingIntervention {
+  event_id: string;
+  event_index: number;
+  evaluation: EvaluatorOutput;
 }
 
 export interface ScenarioApiResponse {
@@ -77,4 +109,6 @@ export interface StateApiResponse {
   evaluation_count: number;
   latest_evaluation: EvaluationRecord | null;
   evaluations: EvaluationRecord[];
+  current_path: string;
+  pending_intervention: PendingIntervention | null;
 }

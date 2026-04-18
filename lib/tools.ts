@@ -5,6 +5,7 @@ import {
   loadVisaCases,
   loadPayrollStatuses,
   loadSignalEvents,
+  loadSignalEventsFromPath,
 } from "./data";
 
 // Tool implementations
@@ -72,8 +73,14 @@ export function getPayrollStatus(employeeId: string) {
   return status;
 }
 
-export function getRecentSignals(scenarioId: string, maxIndex?: number) {
-  const events = loadSignalEvents();
+export function getRecentSignals(
+  scenarioId: string,
+  maxIndex?: number,
+  eventsFilePath?: string
+) {
+  const events = eventsFilePath
+    ? loadSignalEventsFromPath(eventsFilePath)
+    : loadSignalEvents();
   const scenarioEvents = events.filter((e) => e.scenario_id === scenarioId);
   // Only return events up to and including maxIndex so Claude can't see future signals
   const scoped =

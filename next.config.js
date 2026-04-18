@@ -6,6 +6,7 @@ const nextConfig = {
       "/api/advance": ["./data/**/*"],
       "/api/state": ["./data/**/*"],
       "/api/reset": ["./data/**/*"],
+      "/api/intervene": ["./data/**/*"],
     },
   },
 };

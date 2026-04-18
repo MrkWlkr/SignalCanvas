@@ -3,7 +3,6 @@
 import type { SignalEvent, EvaluationRecord } from "@/types";
 import { formatEventType, getRiskColors, getEventCategoryColors } from "@/components/ui";
 
-// Fields to always show in payload (in order, if present)
 const PRIORITY_FIELDS = [
   "status", "delay_probability", "risk_flag", "alignment_risk",
   "days_until_start", "extension_days", "documents_complete",
@@ -19,8 +18,7 @@ function getPriorityPayload(payload: Record<string, unknown>): [string, unknown]
     if (PRIORITY_FIELDS.includes(entry[0])) priority.push(entry);
     else rest.push(entry);
   }
-  const combined = [...priority, ...rest];
-  return combined.slice(0, 4);
+  return [...priority, ...rest].slice(0, 4);
 }
 
 interface Props {
@@ -35,11 +33,17 @@ export default function EventFeed({ events, evaluations, selectedEventId, onSele
   const evalByEventId = new Map<string, EvaluationRecord>();
   for (const ev of evaluations) evalByEventId.set(ev.event_id, ev);
 
+  // Find the index of the first human override, if any
+  const overrideRecord = evaluations.find(
+    (e) => e.human_decision?.option_id === "override"
+  );
+
   const visible = events
     .filter((e) => evaluatedIds.has(e.event_id))
     .sort((a, b) => b.timestamp_offset_sec - a.timestamp_offset_sec);
 
-  const latestEventId = evaluations.length > 0 ? evaluations[evaluations.length - 1].event_id : null;
+  const latestEventId =
+    evaluations.length > 0 ? evaluations[evaluations.length - 1].event_id : null;
 
   if (visible.length === 0) {
     return (
@@ -60,6 +64,12 @@ export default function EventFeed({ events, evaluations, selectedEventId, onSele
         const age = i;
         const riskColors = getRiskColors(evaluation.evaluation.risk_level);
         const catColors = getEventCategoryColors(event.event_category);
+
+        // Path badge logic
+        const isResolvedPath = evaluation.path === "intervention_resolved";
+        const isPostOverride =
+          overrideRecord !== undefined &&
+          evaluation.event_index > overrideRecord.event_index;
 
         const opacity =
           isSelected ? "opacity-100" :
@@ -101,6 +111,17 @@ export default function EventFeed({ events, evaluations, selectedEventId, onSele
               <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap justify-end">
                 {notActedOn && (
                   <span className="text-xs text-amber-800 italic">not acted on</span>
+                )}
+                {/* Path badges */}
+                {isResolvedPath && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-green-950 text-green-400 border border-green-800 font-medium">
+                    Resolved path
+                  </span>
+                )}
+                {isPostOverride && !isResolvedPath && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 font-medium">
+                    Post-override
+                  </span>
                 )}
                 <span
                   className={`text-xs px-2 py-0.5 rounded font-medium ${riskColors.text} ${riskColors.bg}`}
@@ -146,7 +167,11 @@ export default function EventFeed({ events, evaluations, selectedEventId, onSele
             {/* Confidence footer */}
             <div className="mt-2 pt-2 border-t border-gray-800 flex items-center gap-2">
               <span className="text-xs text-gray-600">confidence</span>
-              <span className={`text-xs font-mono ${isLatest || isSelected ? "text-white" : "text-gray-500"}`}>
+              <span
+                className={`text-xs font-mono ${
+                  isLatest || isSelected ? "text-white" : "text-gray-500"
+                }`}
+              >
                 {evaluation.evaluation.confidence.toFixed(2)}
               </span>
               <span className="text-xs text-gray-700 ml-auto font-mono">

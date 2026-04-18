@@ -1,0 +1,172 @@
+[
+  {
+    "event_id": "EV001",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 0,
+    "event_type": "assignment_created",
+    "event_category": "intake",
+    "source_system": "Workday HRIS",
+    "day_offset": 0,
+    "entity_id": "E001",
+    "payload": {
+      "employee_name": "Alex Turner",
+      "route": "UK → US",
+      "duration_days": 120,
+      "start_date": "2026-09-01",
+      "days_to_start": 65,
+      "policy_id": "P_US_UK_01",
+      "policy_flag": "Duration of 120 days exceeds 90-day short-term policy cap. VP exception approval workflow initiated.",
+      "visa_category": "L1B",
+      "attorney_engaged": true,
+      "petition_filed": true,
+      "assumed_processing_days": 38,
+      "estimated_approval_date": "2026-07-29",
+      "buffer_days": 27
+    },
+    "acted_on": true
+  },
+  {
+    "event_id": "EV002",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 15,
+    "event_type": "visa_processing_timeline_extended",
+    "event_category": "external_change",
+    "source_system": "USCIS processing time feed",
+    "day_offset": 10,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 55,
+      "previous_published_processing_days": 38,
+      "updated_published_processing_days": 52,
+      "effective_date": "2026-07-07",
+      "impact": "Estimated approval date shifts from 2026-07-29 to 2026-08-12. Buffer collapses from 27 days to 13 days.",
+      "new_estimated_approval_date": "2026-08-12",
+      "new_buffer_days": 13,
+      "note": "USCIS updated published L1B processing times. Alex's petition was filed under prior timeline assumptions."
+    },
+    "acted_on": true
+  },
+  {
+    "event_id": "EV003",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 30,
+    "event_type": "document_request_issued",
+    "event_category": "status_change_on_dependency",
+    "source_system": "Consulate portal webhook",
+    "day_offset": 16,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 49,
+      "document_requested": "employer_support_letter",
+      "requested_by": "US Consulate — London",
+      "submission_deadline_days": 10,
+      "submission_deadline_date": "2026-07-23",
+      "processing_status": "suspended_pending_document",
+      "impact": "Processing clock paused. Estimated approval date invalidated until document received and reviewed.",
+      "note": "Consulate issued formal Request for Evidence. Processing suspended until employer support letter submitted."
+    },
+    "acted_on": false,
+    "unactioned_recommendation_indices": [0, 3]
+  },
+  {
+    "event_id": "EV004",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 45,
+    "event_type": "document_submission_deadline_missed",
+    "event_category": "deadline_miss",
+    "source_system": "Case management SLA tracker",
+    "day_offset": 26,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 39,
+      "document": "employer_support_letter",
+      "deadline_date": "2026-07-23",
+      "days_overdue": 0,
+      "processing_status": "suspended",
+      "responsible_party": "HR Business Partner",
+      "escalation_attempted": false,
+      "impact": "Processing remains suspended. Submission today plus 52-day processing yields approval 2026-08-18 — 14 days before start. Buffer now critically thin.",
+      "note": "10-day submission window elapsed without response. No escalation initiated by HR Business Partner."
+    },
+    "acted_on": false,
+    "unactioned_recommendation_indices": [0, 1]
+  },
+  {
+    "event_id": "EV004_A",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 48,
+    "event_type": "document_submitted_on_time",
+    "event_category": "milestone_completed",
+    "source_system": "Case management system",
+    "day_offset": 24,
+    "entity_id": "CASE001",
+    "payload": {
+      "document": "employer_support_letter",
+      "submitted_by": "HR Business Partner",
+      "submission_method": "Signal Canvas initiated action",
+      "processing_status": "resumed",
+      "days_to_start": 41,
+      "revised_estimated_approval_date": "2026-08-18",
+      "new_buffer_days": 14,
+      "impact": "Processing resumed. Timeline tight but start date achievable."
+    },
+    "acted_on": true
+  },
+  {
+    "event_id": "EV005_A",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 60,
+    "event_type": "policy_exception_approved",
+    "event_category": "milestone_completed",
+    "source_system": "Internal approval workflow engine",
+    "day_offset": 32,
+    "entity_id": "E001",
+    "payload": {
+      "policy_id": "P_US_UK_01",
+      "approval_status": "approved",
+      "approver": "VP Engineering",
+      "days_elapsed": 32,
+      "days_to_start": 33,
+      "impact": "Assignment authorized. Payroll setup can now proceed."
+    },
+    "acted_on": true
+  },
+  {
+    "event_id": "EV006_A",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 75,
+    "event_type": "host_payroll_setup_initiated",
+    "event_category": "milestone_completed",
+    "source_system": "Payroll operations system",
+    "day_offset": 38,
+    "entity_id": "E001",
+    "payload": {
+      "host_payroll_status": "in_progress",
+      "days_required_for_setup": 14,
+      "estimated_completion_date": "2026-08-18",
+      "days_to_start": 27,
+      "days_before_start": 13,
+      "impact": "Payroll on track. Tight but achievable."
+    },
+    "acted_on": true
+  },
+  {
+    "event_id": "EV007_A",
+    "scenario_id": "SCENARIO_ESCALATING",
+    "timestamp_offset_sec": 90,
+    "event_type": "assignment_cleared_for_travel",
+    "event_category": "milestone_completed",
+    "source_system": "Case management system",
+    "day_offset": 55,
+    "entity_id": "E001",
+    "payload": {
+      "days_to_start": 10,
+      "cleared_domains": ["immigration", "tax", "payroll", "policy"],
+      "open_blockers": [],
+      "blocker_count": 0,
+      "intervention_impact": "Human intervention at day 16 prevented cascade. Estimated 3-week delay avoided.",
+      "note": "All domains cleared. Assignment proceeds as planned."
+    },
+    "acted_on": true
+  }
+]

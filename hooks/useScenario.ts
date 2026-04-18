@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { ScenarioApiResponse, StateApiResponse } from "@/types";
+import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput } from "@/types";
+import type { InterventionOption } from "@/lib/domain-config";
+
+export interface PendingInterventionState {
+  evaluation: EvaluatorOutput;
+  interventionOptions: InterventionOption[];
+}
 
 export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
   const [scenarioData, setScenarioData] = useState<ScenarioApiResponse | null>(null);
@@ -10,20 +16,30 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
   const [advancing, setAdvancing] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingIntervention, setPendingIntervention] =
+    useState<PendingInterventionState | null>(null);
+  const [currentPath, setCurrentPath] = useState("default");
 
   const playingRef = useRef(false);
   const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchScenario = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/scenario?scenarioId=${scenarioId}`);
-      const data = await res.json();
-      setScenarioData(data);
-    } catch (e) {
-      setError("Failed to load scenario");
-      console.error(e);
-    }
-  }, [scenarioId]);
+  // ── Fetchers ──────────────────────────────────────────────────────────────
+
+  const fetchScenario = useCallback(
+    async (path = "default") => {
+      try {
+        const res = await fetch(
+          `/api/scenario?scenarioId=${scenarioId}&path=${path}`
+        );
+        const data = await res.json();
+        setScenarioData(data);
+      } catch (e) {
+        setError("Failed to load scenario");
+        console.error(e);
+      }
+    },
+    [scenarioId]
+  );
 
   const fetchState = useCallback(async (): Promise<StateApiResponse | null> => {
     try {
@@ -38,17 +54,38 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     }
   }, [scenarioId]);
 
+  // ── Bootstrap — fetch state first (for current_path), then scenario ───────
+
   useEffect(() => {
-    // Stop play loop when scenario changes
+    // Stop any running play loop when scenario changes
     playingRef.current = false;
     setPlaying(false);
     if (playTimerRef.current) {
       clearTimeout(playTimerRef.current);
       playTimerRef.current = null;
     }
+    setPendingIntervention(null);
+    setCurrentPath("default");
     setLoading(true);
-    Promise.all([fetchScenario(), fetchState()]).finally(() => setLoading(false));
+
+    const load = async () => {
+      const stateResult = await fetchState();
+      const path = stateResult?.current_path ?? "default";
+      setCurrentPath(path);
+
+      // Restore pending intervention if one exists in state
+      if (stateResult?.pending_intervention) {
+        // We don't have intervention_options from state — re-fetch from config via advance response
+        // For now, clear it; will be re-set when user re-advances if state survives hot-reload
+      }
+
+      await fetchScenario(path);
+    };
+
+    load().finally(() => setLoading(false));
   }, [fetchScenario, fetchState]);
+
+  // ── Advance ───────────────────────────────────────────────────────────────
 
   const doAdvance = useCallback(async (): Promise<boolean> => {
     setAdvancing(true);
@@ -60,10 +97,22 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
         body: JSON.stringify({ scenarioId }),
       });
       const data = await res.json();
+
       if (!res.ok) {
         setError(data.error ?? "Advance failed");
         return false;
       }
+
+      if (data.requires_intervention) {
+        // Agent paused — surface the intervention card
+        setPendingIntervention({
+          evaluation: data.evaluation as EvaluatorOutput,
+          interventionOptions: data.intervention_options as InterventionOption[],
+        });
+        await fetchState();
+        return false; // Stop play loop
+      }
+
       const state = await fetchState();
       return state != null && !state.complete;
     } catch (e) {
@@ -75,9 +124,13 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     }
   }, [scenarioId, fetchState]);
 
-  // Play loop ref — always points to latest doAdvance closure
+  // Keep ref in sync so the play loop always calls the latest closure
   const doAdvanceRef = useRef(doAdvance);
-  useEffect(() => { doAdvanceRef.current = doAdvance; }, [doAdvance]);
+  useEffect(() => {
+    doAdvanceRef.current = doAdvance;
+  }, [doAdvance]);
+
+  // ── Play loop ─────────────────────────────────────────────────────────────
 
   const scheduleNext = useCallback(() => {
     playTimerRef.current = setTimeout(async () => {
@@ -100,7 +153,6 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     if (playingRef.current) return;
     playingRef.current = true;
     setPlaying(true);
-    // Immediately advance once, then schedule subsequent advances
     doAdvanceRef.current().then((shouldContinue) => {
       if (shouldContinue && playingRef.current) {
         scheduleNext();
@@ -120,8 +172,48 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     }
   }, []);
 
+  // ── Intervene ─────────────────────────────────────────────────────────────
+
+  const intervene = useCallback(
+    async (optionId: string) => {
+      setAdvancing(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/intervene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scenarioId,
+            decision_id: `decision_${Date.now()}`,
+            option_id: optionId,
+          }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error ?? "Intervention failed");
+          return;
+        }
+
+        const newPath = (data.current_path as string) ?? "default";
+        setPendingIntervention(null);
+        setCurrentPath(newPath);
+        // Reload scenario events from the new path before refreshing state
+        await fetchScenario(newPath);
+        await fetchState();
+      } catch (e) {
+        setError("Intervention request failed");
+        console.error(e);
+      } finally {
+        setAdvancing(false);
+      }
+    },
+    [scenarioId, fetchScenario, fetchState]
+  );
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+
   const reset = useCallback(async () => {
-    // Stop play if running
     playingRef.current = false;
     setPlaying(false);
     if (playTimerRef.current) {
@@ -130,12 +222,15 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     }
     setLoading(true);
     setError(null);
+    setPendingIntervention(null);
+    setCurrentPath("default");
     try {
       await fetch("/api/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scenarioId }),
       });
+      await fetchScenario("default");
       await fetchState();
     } catch (e) {
       setError("Reset failed");
@@ -143,7 +238,7 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     } finally {
       setLoading(false);
     }
-  }, [scenarioId, fetchState]);
+  }, [scenarioId, fetchScenario, fetchState]);
 
   return {
     scenarioData,
@@ -156,5 +251,8 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     playSimulation,
     pauseSimulation,
     reset,
+    pendingIntervention,
+    intervene,
+    currentPath,
   };
 }

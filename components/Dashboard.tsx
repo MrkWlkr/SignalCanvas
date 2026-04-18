@@ -7,6 +7,7 @@ import EventFeed from "@/components/EventFeed";
 import PathwayView from "@/components/PathwayView";
 import ConfidenceTimeline from "@/components/ConfidenceTimeline";
 import DataInspector from "@/components/DataInspector";
+import InterventionCard from "@/components/InterventionCard";
 
 const TABS = ["Live Feed", "Decision Pathway", "Confidence Timeline", "Data Inspector"] as const;
 type Tab = (typeof TABS)[number];
@@ -27,6 +28,9 @@ export default function Dashboard() {
     playSimulation,
     pauseSimulation,
     reset,
+    pendingIntervention,
+    intervene,
+    currentPath,
   } = useScenario(activeScenario);
 
   const events = scenarioData?.events ?? [];
@@ -35,7 +39,9 @@ export default function Dashboard() {
   const eventByEventId = new Map(events.map((e) => [e.event_id, e]));
   const evalByEventId = new Map(evaluations.map((e) => [e.event_id, e]));
   const selectedEvaluation = selectedEventId ? (evalByEventId.get(selectedEventId) ?? null) : null;
-  const selectedActedOn = selectedEventId ? eventByEventId.get(selectedEventId)?.acted_on : undefined;
+  const selectedActedOn = selectedEventId
+    ? eventByEventId.get(selectedEventId)?.acted_on
+    : undefined;
   const selectedUnactionedIndices = selectedEventId
     ? (eventByEventId.get(selectedEventId)?.unactioned_recommendation_indices ?? [])
     : [];
@@ -65,6 +71,8 @@ export default function Dashboard() {
     setActiveTab("Live Feed");
   }, []);
 
+  const hasPendingIntervention = pendingIntervention !== null;
+
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 57px)" }}>
       {error && (
@@ -74,7 +82,7 @@ export default function Dashboard() {
       )}
 
       <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3">
-        {/* Left sidebar */}
+        {/* ── Left sidebar ──────────────────────────────────────────────── */}
         <div className="lg:col-span-1 border-r border-gray-800 overflow-hidden flex flex-col">
           {loading && !scenarioData ? (
             <div className="flex items-center justify-center h-full text-gray-600 text-sm">
@@ -88,6 +96,8 @@ export default function Dashboard() {
               advancing={advancing}
               playing={playing}
               activeScenario={activeScenario}
+              currentPath={currentPath}
+              hasPendingIntervention={hasPendingIntervention}
               onScenarioChange={handleScenarioChange}
               onAdvance={handleAdvance}
               onReset={handleReset}
@@ -97,10 +107,25 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Main content */}
+        {/* ── Main content ──────────────────────────────────────────────── */}
         <div className="lg:col-span-2 flex flex-col overflow-hidden">
-          {/* Tab bar */}
-          <div className="flex border-b border-gray-800 bg-gray-950 flex-shrink-0">
+
+          {/* Intervention banner — shown when agent is paused */}
+          {hasPendingIntervention && (
+            <div className="flex items-center gap-2 bg-red-950/60 border-b border-red-800/60 px-4 py-2 flex-shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse flex-shrink-0" />
+              <span className="text-xs text-red-300 font-medium">
+                Agent paused — review required before proceeding
+              </span>
+            </div>
+          )}
+
+          {/* Tab bar — dimmed when intervention is pending */}
+          <div
+            className={`flex border-b border-gray-800 bg-gray-950 flex-shrink-0 transition-opacity duration-300 ${
+              hasPendingIntervention ? "opacity-50 pointer-events-none" : ""
+            }`}
+          >
             {TABS.map((tab) => (
               <button
                 key={tab}
@@ -116,30 +141,44 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Tab content */}
-          <div className="flex-1 overflow-hidden">
-            {activeTab === "Live Feed" && (
-              <EventFeed
-                events={events}
-                evaluations={evaluations}
-                selectedEventId={selectedEventId}
-                onSelect={handleSelectEvent}
-              />
-            )}
-            {activeTab === "Decision Pathway" && (
-              <PathwayView evaluations={evaluations} events={events} />
-            )}
-            {activeTab === "Confidence Timeline" && (
-              <ConfidenceTimeline evaluations={evaluations} events={events} />
-            )}
-            {activeTab === "Data Inspector" && (
-              <DataInspector
-                selected={selectedEvaluation}
-                selectedActedOn={selectedActedOn}
-                unactionedIndices={selectedUnactionedIndices}
-                latest={stateData?.latest_evaluation ?? null}
-                onClearSelection={handleClearSelection}
-              />
+          {/* Content area */}
+          <div className="flex-1 overflow-hidden relative">
+            {hasPendingIntervention ? (
+              /* Intervention card fills the content area */
+              <div className="absolute inset-0 overflow-y-auto p-4">
+                <InterventionCard
+                  evaluation={pendingIntervention.evaluation}
+                  interventionOptions={pendingIntervention.interventionOptions}
+                  onIntervene={intervene}
+                />
+              </div>
+            ) : (
+              /* Normal tab content */
+              <>
+                {activeTab === "Live Feed" && (
+                  <EventFeed
+                    events={events}
+                    evaluations={evaluations}
+                    selectedEventId={selectedEventId}
+                    onSelect={handleSelectEvent}
+                  />
+                )}
+                {activeTab === "Decision Pathway" && (
+                  <PathwayView evaluations={evaluations} events={events} />
+                )}
+                {activeTab === "Confidence Timeline" && (
+                  <ConfidenceTimeline evaluations={evaluations} events={events} />
+                )}
+                {activeTab === "Data Inspector" && (
+                  <DataInspector
+                    selected={selectedEvaluation}
+                    selectedActedOn={selectedActedOn}
+                    unactionedIndices={selectedUnactionedIndices}
+                    latest={stateData?.latest_evaluation ?? null}
+                    onClearSelection={handleClearSelection}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>

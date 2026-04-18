@@ -79,6 +79,11 @@ function loadJson<T>(relativePath: string): T {
   return JSON.parse(raw) as T;
 }
 
+// Load signal events from an arbitrary relative path — used for path-aware loading
+export function loadSignalEventsFromPath(relativePath: string): SignalEvent[] {
+  return loadJson<SignalEvent[]>(relativePath);
+}
+
 export function loadEmployees(): Employee[] {
   return loadJson<Employee[]>("data/employees.json");
 }
