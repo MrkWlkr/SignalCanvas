@@ -57,9 +57,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-3">
-        {/* ── Left sidebar ──────────────────────────────────────────────── */}
-        <div className="lg:col-span-1 border-r border-gray-800 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden flex">
+        {/* ── Left sidebar — fixed 375px ────────────────────────────────── */}
+        <div className="border-r border-gray-800 overflow-hidden flex flex-col flex-shrink-0" style={{ width: 375 }}>
           {loading && !scenarioData ? (
             <div className="flex items-center justify-center h-full text-gray-600 text-sm">
               Loading scenario…
@@ -83,8 +83,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* ── Agent canvas — takes the remaining 2/3 ────────────────────── */}
-        <div className="lg:col-span-2 flex flex-col overflow-hidden">
+        {/* ── Agent canvas — takes all remaining space ──────────────────── */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           <AgentCanvas
             evaluations={evaluations}
             events={events}
