@@ -52,109 +52,178 @@ export interface HumanDecisionNodeData {
   pathSwitched: boolean;
 }
 
-// ── Key result extraction (domain-specific but tool-name-keyed, not field-keyed) ──
+// ── Key result extraction ─────────────────────────────────────────────────────
 
-export function getKeyResults(trace: ToolCallTrace): { field: string; value: string }[] {
-  const r = trace.tool_result;
+type KV = { field: string; value: string };
 
-  if (Array.isArray(r)) {
-    return [{ field: "signals retrieved", value: String(r.length) }];
+// Internal IDs that add no human-readable value in the popover
+const SKIP_FIELDS = new Set([
+  "employee_id", "case_id", "policy_id", "event_id", "scenario_id",
+  "route_id", "last_update", "last_reviewed", "notes",
+]);
+
+function compact(items: (KV | null | undefined)[]): KV[] {
+  return items.filter((x): x is KV => x != null);
+}
+
+function boolYesNo(v: unknown): string {
+  return v === true ? "yes" : v === false ? "no" : "—";
+}
+
+export function getKeyResults(trace: ToolCallTrace): KV[] {
+  // tool_result may occasionally be stored as a JSON string — parse if needed
+  let r: unknown = trace.tool_result;
+  if (typeof r === "string") {
+    try { r = JSON.parse(r); } catch { /* keep as-is */ }
   }
-  if (!r || typeof r !== "object") return [];
 
+  // get_recent_signals always returns an array of signal events
+  if (trace.tool_name === "get_recent_signals") {
+    if (!Array.isArray(r)) return [];
+    const signals = r as Record<string, unknown>[];
+    const seen = new Set<string>();
+    const types: string[] = [];
+    for (const s of signals) {
+      const t = String(s.event_type ?? "unknown");
+      if (!seen.has(t)) { seen.add(t); types.push(t); }
+    }
+    return [
+      { field: "signals", value: String(signals.length) },
+      ...types.slice(0, 4).map((t) => ({ field: "event type", value: t.replace(/_/g, " ") })),
+    ];
+  }
+
+  // Fallback for unexpected arrays from other tools
+  if (Array.isArray(r)) {
+    return [{ field: "items returned", value: String(r.length) }];
+  }
+
+  if (!r || typeof r !== "object") return [];
   const result = r as Record<string, unknown>;
-  // Surface "error" field if present
   if (result.error) return [{ field: "error", value: String(result.error) }];
 
   switch (trace.tool_name) {
     case "get_employee":
-      return [
-        { field: "name", value: String(result.employee_name ?? "—") },
-        {
-          field: "route",
-          value:
-            result.home_country && result.host_country
-              ? `${result.home_country} → ${result.host_country}`
-              : "—",
-        },
-      ].filter((kv) => kv.value !== "—");
+      return compact([
+        result.employee_name != null
+          ? { field: "name", value: String(result.employee_name) }
+          : null,
+        result.department != null
+          ? { field: "department", value: String(result.department) }
+          : null,
+        result.assignment_type != null
+          ? { field: "type", value: String(result.assignment_type).replace(/_/g, " ") }
+          : null,
+        result.home_country && result.host_country
+          ? { field: "route", value: `${result.home_country} → ${result.host_country}` }
+          : null,
+        result.start_date != null
+          ? { field: "start date", value: String(result.start_date) }
+          : null,
+        result.planned_duration_days != null
+          ? { field: "duration", value: `${result.planned_duration_days} days` }
+          : null,
+      ]);
 
     case "get_assignment": {
-      const emp = result.employee as Record<string, unknown> | null;
-      const policy = result.policy as Record<string, unknown> | null;
-      const cr = result.country_rule as Record<string, unknown> | null;
-      const out: { field: string; value: string }[] = [];
-      if (emp?.employee_name) out.push({ field: "employee", value: String(emp.employee_name) });
-      if (policy?.policy_id) out.push({ field: "policy", value: String(policy.policy_id) });
-      if (cr?.tax_threshold_days != null)
-        out.push({ field: "tax threshold", value: `${cr.tax_threshold_days} days` });
-      return out;
+      // Returns { employee, country_rule, policy } — surface employee fields
+      const emp = (result.employee ?? {}) as Record<string, unknown>;
+      return compact([
+        emp.employee_name != null
+          ? { field: "name", value: String(emp.employee_name) }
+          : null,
+        emp.assignment_type != null
+          ? { field: "type", value: String(emp.assignment_type).replace(/_/g, " ") }
+          : null,
+        emp.home_country && emp.host_country
+          ? { field: "route", value: `${emp.home_country} → ${emp.host_country}` }
+          : null,
+        emp.start_date != null
+          ? { field: "start date", value: String(emp.start_date) }
+          : null,
+        emp.planned_duration_days != null
+          ? { field: "duration", value: `${emp.planned_duration_days} days` }
+          : null,
+      ]);
     }
 
     case "get_country_rule":
-      return [
-        { field: "tax threshold", value: `${result.tax_threshold_days ?? "—"} days` },
-        { field: "visa", value: String(result.visa_category ?? "—") },
-        {
-          field: "processing",
-          value: `${result.typical_visa_processing_days ?? "—"} days`,
-        },
-      ].filter((kv) => !kv.value.includes("—"));
+      return compact([
+        result.tax_threshold_days != null
+          ? { field: "tax threshold", value: `${result.tax_threshold_days} days` }
+          : null,
+        result.typical_visa_processing_days != null
+          ? { field: "visa processing", value: `${result.typical_visa_processing_days} days` }
+          : null,
+        result.hard_deadline_buffer_days != null
+          ? { field: "deadline buffer", value: `${result.hard_deadline_buffer_days} days` }
+          : null,
+        result.double_tax_treaty != null
+          ? { field: "double tax treaty", value: boolYesNo(result.double_tax_treaty) }
+          : null,
+      ]);
 
     case "get_policy":
-      return [
-        {
-          field: "max days",
-          value:
-            result.max_short_term_assignment_days != null
-              ? String(result.max_short_term_assignment_days)
-              : "—",
-        },
-        {
-          field: "pre-approval",
-          value: result.requires_preapproval_for_extension ? "required" : "not required",
-        },
-      ].filter((kv) => kv.value !== "—");
+      return compact([
+        result.max_short_term_assignment_days != null
+          ? { field: "max days", value: String(result.max_short_term_assignment_days) }
+          : null,
+        result.requires_payroll_review_above_days != null
+          ? { field: "payroll review above", value: `${result.requires_payroll_review_above_days} days` }
+          : null,
+        result.requires_preapproval_for_extension != null
+          ? { field: "pre-approval", value: boolYesNo(result.requires_preapproval_for_extension) }
+          : null,
+      ]);
 
-    case "get_visa_case":
-      return [
-        { field: "status", value: String(result.visa_status ?? "—") },
-        {
-          field: "delay prob",
-          value:
-            result.visa_delay_probability != null
-              ? `${Math.round(Number(result.visa_delay_probability) * 100)}%`
-              : "—",
-        },
-        {
-          field: "docs complete",
-          value:
-            result.documents_complete === true
-              ? "yes"
-              : result.documents_complete === false
-              ? "no"
-              : "—",
-        },
-      ].filter((kv) => kv.value !== "—");
+    case "get_visa_case": {
+      const missingDocs = Array.isArray(result.missing_documents) && result.missing_documents.length > 0
+        ? (result.missing_documents as string[]).join(", ")
+        : null;
+      return compact([
+        result.visa_status != null
+          ? { field: "status", value: String(result.visa_status).replace(/_/g, " ") }
+          : null,
+        result.days_until_assignment_start != null
+          ? { field: "days to start", value: String(result.days_until_assignment_start) }
+          : null,
+        result.visa_delay_probability != null
+          ? { field: "delay probability", value: `${Math.round(Number(result.visa_delay_probability) * 100)}%` }
+          : null,
+        result.documents_complete != null
+          ? { field: "docs complete", value: boolYesNo(result.documents_complete) }
+          : null,
+        missingDocs
+          ? { field: "missing docs", value: missingDocs }
+          : null,
+      ]);
+    }
 
     case "get_payroll_status":
-      return [
-        { field: "alignment risk", value: String(result.alignment_risk ?? "—") },
-        { field: "host status", value: String(result.host_payroll_status ?? "—") },
-        {
-          field: "shadow payroll",
-          value: result.shadow_payroll_required ? "required" : "not required",
-        },
-      ].filter((kv) => kv.value !== "—");
+      return compact([
+        result.home_payroll_status != null
+          ? { field: "home payroll", value: String(result.home_payroll_status).replace(/_/g, " ") }
+          : null,
+        result.host_payroll_status != null
+          ? { field: "host payroll", value: String(result.host_payroll_status).replace(/_/g, " ") }
+          : null,
+        result.alignment_risk != null
+          ? { field: "alignment risk", value: String(result.alignment_risk) }
+          : null,
+        result.shadow_payroll_required != null
+          ? { field: "shadow payroll", value: boolYesNo(result.shadow_payroll_required) }
+          : null,
+      ]);
 
     case "calculate_days_until_start":
-      return [{ field: "days until start", value: String(result.days_until_start ?? "—") }].filter(
-        (kv) => kv.value !== "—"
-      );
+      return result.days_until_start != null
+        ? [{ field: "days remaining", value: String(result.days_until_start) }]
+        : [];
 
     default:
       return Object.entries(result)
-        .slice(0, 3)
+        .filter(([k]) => !SKIP_FIELDS.has(k))
+        .slice(0, 4)
         .map(([k, v]) => ({ field: k.replace(/_/g, " "), value: String(v) }));
   }
 }

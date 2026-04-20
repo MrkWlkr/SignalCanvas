@@ -75,7 +75,7 @@ export function SourceNode({ data }: { data: SourceNodeData }) {
             {keyResults.length > 0 && (
               <>
                 <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-                  Key results
+                  Results
                 </div>
                 <ul style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {keyResults.slice(0, 5).map((kv, i) => (
@@ -87,6 +87,11 @@ export function SourceNode({ data }: { data: SourceNodeData }) {
                       </span>
                     </li>
                   ))}
+                  {keyResults.length > 5 && (
+                    <li style={{ fontSize: 9, color: "#4b5563", paddingLeft: 8 }}>
+                      +{keyResults.length - 5} more
+                    </li>
+                  )}
                 </ul>
               </>
             )}
