@@ -340,12 +340,12 @@ export function buildEdges(
     });
   }
 
-  // Spine → Source: dashed gray
+  // Source → Spine: dashed gray, arrow points into left (input) side of spine node
   for (const src of sourceNodes) {
     edges.push({
       id: `src-edge-${src.id}`,
-      source: src.data.spineEventId,
-      target: src.id,
+      source: src.id,
+      target: src.data.spineEventId,
       style: { stroke: "#4b5563", strokeWidth: 1, strokeDasharray: "4 3" },
       markerEnd: { type: MarkerType.ArrowClosed, color: "#4b5563" },
     });

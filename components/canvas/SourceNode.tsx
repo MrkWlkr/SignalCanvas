@@ -12,7 +12,7 @@ export function SourceNode({ data }: { data: SourceNodeData }) {
 
   return (
     <>
-      <Handle type="target" position={Position.Top} style={{ background: "#374151", border: "none" }} />
+      <Handle type="source" position={Position.Top} style={{ background: "#374151", border: "none" }} />
 
       <div style={{ position: "relative" }}>
         {/* ── Popover — rendered above the node, outside React Flow flow ─────── */}
@@ -126,7 +126,7 @@ export function SourceNode({ data }: { data: SourceNodeData }) {
         </div>
       </div>
 
-      <Handle type="source" position={Position.Bottom} style={{ background: "#374151", border: "none", opacity: 0 }} />
+      <Handle type="target" position={Position.Bottom} style={{ background: "#374151", border: "none", opacity: 0 }} />
     </>
   );
 }
