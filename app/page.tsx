@@ -86,6 +86,9 @@ function DemoSection() {
             tax, payroll, and policy signals simultaneously — and how Signal Canvas makes
             every inference visible and auditable.
           </p>
+          <p className="text-xs text-gray-600 mt-3 max-w-xl mx-auto">
+            Click any node to see what the agent consulted and concluded. Click a source node to see what was queried and returned.
+          </p>
         </div>
         <Dashboard />
       </div>

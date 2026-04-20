@@ -4,6 +4,19 @@
 // must require zero changes to any API route or component.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { EvaluatorOutput } from "@/types";
+
+export interface CanvasConfig {
+  kpiLabel: string;                            // e.g. "Agent confidence"
+  kpiField: keyof EvaluatorOutput;             // e.g. "confidence"
+  kpiRange: [number, number];                  // e.g. [0, 1]
+  kpiThresholdValue: number;                   // e.g. 0.7
+  kpiThresholdLabel: string;                   // e.g. "Escalation threshold"
+  nodeSpacingPx: number;                       // spacing between spine nodes in px
+  compressAfterCount: number;                  // nodes beyond this count compress to circles
+  toolSourceSystemMap: Record<string, string>; // tool name → logical source system label
+}
+
 export interface InterventionRule {
   field: string;
   operator: "is" | "is_not" | "greater_than" | "less_than" | "includes";
@@ -48,6 +61,7 @@ export interface DomainConfig {
     payrollStatus: string;
     signalEvents: string;
   };
+  canvas: CanvasConfig;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -192,6 +206,26 @@ Output ONLY valid JSON with all fields populated. The JSON must contain exactly 
     visaCases: "data/visa_cases.json",
     payrollStatus: "data/payroll_status.json",
     signalEvents: "data/signal_events.json",
+  },
+
+  canvas: {
+    kpiLabel: "Agent confidence",
+    kpiField: "confidence",
+    kpiRange: [0, 1] as [number, number],
+    kpiThresholdValue: 0.7,
+    kpiThresholdLabel: "Escalation threshold",
+    nodeSpacingPx: 200,
+    compressAfterCount: 4,
+    toolSourceSystemMap: {
+      get_employee:               "HRIS",
+      get_assignment:             "HRIS",
+      get_country_rule:           "Country Rules DB",
+      get_policy:                 "Policy Engine",
+      get_visa_case:              "Immigration System",
+      get_payroll_status:         "Payroll System",
+      get_recent_signals:         "Signal Feed",
+      calculate_days_until_start: "Calendar",
+    },
   },
 };
 
