@@ -74,24 +74,24 @@ function HeroSection() {
 
 function DemoSection() {
   return (
-    <section id="demo" className="bg-gray-950 border-t border-gray-800 px-6 py-16">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="text-xs text-gray-500 uppercase tracking-widest mb-2">
-            Live demo — Enterprise Compliance Intelligence
-          </div>
-          <p className="text-sm text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            The scenario below demonstrates Signal Canvas monitoring a complex multi-system
-            compliance workflow in real time. Watch how the agent reasons across immigration,
-            tax, payroll, and policy signals simultaneously — and how Signal Canvas makes
-            every inference visible and auditable.
-          </p>
-          <p className="text-xs text-gray-600 mt-3 max-w-xl mx-auto">
-            Click any node to see what the agent consulted and concluded. Click a source node to see what was queried and returned.
-          </p>
+    <section id="demo" className="bg-gray-950 border-t border-gray-800 py-16">
+      {/* Heading stays centered with padding */}
+      <div className="px-6 text-center mb-8">
+        <div className="text-xs text-gray-500 uppercase tracking-widest mb-2">
+          Live demo — Enterprise Compliance Intelligence
         </div>
-        <Dashboard />
+        <p className="text-sm text-gray-500 max-w-2xl mx-auto leading-relaxed">
+          The scenario below demonstrates Signal Canvas monitoring a complex multi-system
+          compliance workflow in real time. Watch how the agent reasons across immigration,
+          tax, payroll, and policy signals simultaneously — and how Signal Canvas makes
+          every inference visible and auditable.
+        </p>
+        <p className="text-xs text-gray-600 mt-3 max-w-xl mx-auto">
+          Click any node to see what the agent consulted and concluded. Click a source node to see what was queried and returned.
+        </p>
       </div>
+      {/* Dashboard spans full viewport width — no max-w cap */}
+      <Dashboard />
     </section>
   );
 }
