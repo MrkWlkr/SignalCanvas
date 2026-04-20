@@ -366,6 +366,7 @@ Using the baseline profile above and the available tools, investigate the impact
       requires_intervention: true,
       event,
       evaluation: finalEvaluation,
+      tool_trace: toolCallTrace,
       intervention_options: domainConfig.interventionOptions,
       progress: {
         current_event_index: eventIndex,
