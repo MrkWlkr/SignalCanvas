@@ -3,6 +3,7 @@ import { getState, initState } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
 import { domainConfig } from "@/lib/domain-config";
 
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const scenarioId = searchParams.get("scenarioId") ?? "SCENARIO_ESCALATING";
@@ -38,5 +39,6 @@ export async function GET(request: NextRequest) {
     evaluations: state.evaluations,
     current_path: state.currentPath,
     pending_intervention: state.pendingIntervention,
+    action_register: state.actionRegister,
   });
 }

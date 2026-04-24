@@ -37,16 +37,64 @@ export interface SignalEvent {
   payload: Record<string, unknown>;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Structured action types — Phase 8a
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AgentActionTaken {
+  id: string;
+  action: string;
+  type: "risk_update" | "flag" | "log" | "supersede" | "notify" | "correlate" | "suppress" | "escalate";
+  log_to_register: boolean;
+  impact_magnitude: "low" | "medium" | "high" | "critical";
+  regulatory_basis?: string;
+}
+
+export interface SurfacedAwareness {
+  id: string;
+  observation: string;
+  relevance: string;
+  horizon: "immediate" | "short_term" | "medium_term";
+  clinical_basis?: string;
+}
+
+export interface HumanActionRequired {
+  id: string;
+  action: string;
+  owner: string;
+  deadline: string;
+  consequence: string;
+  urgency: "immediate" | "urgent" | "monitor";
+  patient_impact?: string;
+}
+
+export interface ActionRegisterEntry {
+  id: string;
+  action: string;
+  owner: string;
+  deadline: string;
+  consequence: string;
+  urgency: "immediate" | "urgent" | "monitor";
+  status: "active" | "resolved_system" | "resolved_human" | "superseded" | "missed";
+  issued_at_event_index: number;
+  issued_at_date: string;
+  resolved_by?: "system_event" | "human_decision" | "agent_superseded";
+  resolved_at?: string;
+  resolution_evidence?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Full evaluator output schema — all fields populated by Claude
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface EvaluatorOutput {
-  // Original fields
   risk_level: RiskLevel;
   confidence: number;
   affected_domains: string[];
-  recommended_actions: string[];
+  /** @deprecated use agent_actions_taken, surfaced_for_awareness, human_actions_required */
+  recommended_actions?: string[];
   reasoning_summary: string;
   next_checks: string[];
-  // New intervention-routing fields
   decision_type: "autonomous" | "recommendation" | "escalation" | "pause_for_human";
   impact_magnitude: "low" | "medium" | "high" | "critical";
   reversibility: "reversible" | "partially_reversible" | "irreversible";
@@ -59,6 +107,14 @@ export interface EvaluatorOutput {
     decision_type_seen_before: boolean;
     note: string;
   };
+  // Three typed output arrays replacing recommended_actions
+  agent_actions_taken: AgentActionTaken[];
+  surfaced_for_awareness: SurfacedAwareness[];
+  human_actions_required: HumanActionRequired[];
+  // Cross-reference fields for register status tracking
+  resolves_prior_actions: string[];
+  missed_prior_actions: string[];
+  supersedes_prior_actions: string[];
 }
 
 export interface HumanDecision {
@@ -85,6 +141,8 @@ export interface EvaluationRecord {
   status: "autonomous" | "pending_human_review" | "human_reviewed";
   path: string;
   human_decision?: HumanDecision;
+  // Snapshot of the action register at this evaluation point — enables time-travel filtering
+  registerSnapshot?: ActionRegisterEntry[];
 }
 
 export interface PendingIntervention {
@@ -111,4 +169,5 @@ export interface StateApiResponse {
   evaluations: EvaluationRecord[];
   current_path: string;
   pending_intervention: PendingIntervention | null;
+  action_register: ActionRegisterEntry[];
 }

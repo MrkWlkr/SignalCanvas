@@ -142,11 +142,11 @@ export function NodeDetailDrawer({ record, eventType, dayOffset, onClose }: Node
         )}
 
         {/* Recommended actions */}
-        {ev.recommended_actions.length > 0 && (
+        {(ev.recommended_actions?.length ?? 0) > 0 && (
           <div style={{ marginBottom: 14 }}>
             <SectionLabel>Recommended actions</SectionLabel>
             <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
-              {ev.recommended_actions.map((action, i) => (
+              {(ev.recommended_actions ?? []).map((action, i) => (
                 <li key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <span style={{ fontSize: 9, color: "#4b5563", fontFamily: "monospace", lineHeight: "18px", flexShrink: 0, fontWeight: 700 }}>
                     {String(i + 1).padStart(2, "0")}

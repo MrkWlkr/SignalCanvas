@@ -149,11 +149,11 @@ export default function DataInspector({
           <div className="text-xs text-gray-500 uppercase tracking-wider">Recommended Actions</div>
           {notActedOn && <span className="text-xs text-amber-700 italic">not acted on</span>}
         </div>
-        {evaluation.recommended_actions.length === 0 ? (
+        {(evaluation.recommended_actions?.length ?? 0) === 0 ? (
           <div className="text-gray-600 text-sm">None</div>
         ) : (
           <ol className="flex flex-col gap-2.5">
-            {evaluation.recommended_actions.map((action, i) => {
+            {(evaluation.recommended_actions ?? []).map((action, i) => {
               const wasUnactioned = notActedOn && unactionedIndices.includes(i);
               const isFirst = i === 0;
               return (

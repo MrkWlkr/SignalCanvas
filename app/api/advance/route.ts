@@ -3,19 +3,25 @@ import Anthropic from "@anthropic-ai/sdk";
 import { domainConfig } from "@/lib/domain-config";
 import type { InterventionThresholds, InterventionRule } from "@/lib/domain-config";
 import { TOOL_DEFINITIONS, executeTool, getRecentSignals } from "@/lib/tools";
-import { loadSignalEventsFromPath, loadEmployees } from "@/lib/data";
+import { loadSignalEventsFromPath } from "@/lib/data";
 import {
   recordEvaluation,
   recordPendingIntervention,
   getState,
+  updateActionRegister,
+  getRegisterAtEventIndex,
+  getActionRegister,
 } from "@/lib/state";
-import type { EvaluatorOutput, EvaluationRecord, ToolCallTrace, PendingIntervention } from "@/types";
-import {
-  getEmployee,
-  getVisaCase,
-  getPayrollStatus,
-  getAssignment,
-} from "@/lib/tools";
+import type {
+  EvaluatorOutput,
+  EvaluationRecord,
+  ToolCallTrace,
+  PendingIntervention,
+  AgentActionTaken,
+  SurfacedAwareness,
+  HumanActionRequired,
+} from "@/types";
+import { formatEventDate } from "@/lib/dates";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -55,7 +61,6 @@ function checkRateLimit(ip: string): boolean {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Generic threshold evaluator — zero mobility-specific logic lives here.
-// Operates on the InterventionThresholds shape from any DomainConfig.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function matchesRule(evaluation: EvaluatorOutput, rule: InterventionRule): boolean {
@@ -63,7 +68,6 @@ function matchesRule(evaluation: EvaluatorOutput, rule: InterventionRule): boole
 
   switch (rule.operator) {
     case "is": {
-      // If rule.value is an array, treat as "field value is one of"
       if (Array.isArray(rule.value)) return rule.value.includes(rawValue as string);
       return rawValue === rule.value;
     }
@@ -72,22 +76,15 @@ function matchesRule(evaluation: EvaluatorOutput, rule: InterventionRule): boole
       return rawValue !== rule.value;
     }
     case "greater_than": {
-      // If field value is an array, compare array.length
-      const numeric = Array.isArray(rawValue)
-        ? rawValue.length
-        : (rawValue as number);
+      const numeric = Array.isArray(rawValue) ? rawValue.length : (rawValue as number);
       return numeric > (rule.value as number);
     }
     case "less_than": {
-      const numeric = Array.isArray(rawValue)
-        ? rawValue.length
-        : (rawValue as number);
+      const numeric = Array.isArray(rawValue) ? rawValue.length : (rawValue as number);
       return numeric < (rule.value as number);
     }
     case "includes": {
-      // Array field: non-empty check (any element present)
       if (Array.isArray(rawValue)) return rawValue.length > 0;
-      // String field: substring check
       if (typeof rawValue === "string") return rawValue.includes(rule.value as string);
       return false;
     }
@@ -100,8 +97,6 @@ function matchesGroup(evaluation: EvaluatorOutput, group: InterventionRule[]): b
   return group.every((rule) => matchesRule(evaluation, rule));
 }
 
-// Returns the final human_review_required decision after applying all threshold groups.
-// Priority order: always_review (highest) > autonomous_when > review_when > Claude's own value.
 function evaluateInterventionThresholds(
   evaluation: EvaluatorOutput,
   thresholds: InterventionThresholds
@@ -121,8 +116,50 @@ function evaluateInterventionThresholds(
   );
   if (reviewWhen) return true;
 
-  // Fall back to Claude's own judgement
   return evaluation.human_review_required;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-object normalizers for the three typed action arrays
+// ─────────────────────────────────────────────────────────────────────────────
+
+function normalizeAgentAction(raw: unknown): AgentActionTaken {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const result: AgentActionTaken = {
+    id: (r.id as string) ?? "act_unknown",
+    action: (r.action as string) ?? "",
+    type: (r.type as AgentActionTaken["type"]) ?? "log",
+    log_to_register: (r.log_to_register as boolean) ?? false,
+    impact_magnitude: (r.impact_magnitude as AgentActionTaken["impact_magnitude"]) ?? "low",
+  };
+  if (r.regulatory_basis !== undefined) result.regulatory_basis = r.regulatory_basis as string;
+  return result;
+}
+
+function normalizeSurfacedAwareness(raw: unknown): SurfacedAwareness {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const result: SurfacedAwareness = {
+    id: (r.id as string) ?? "obs_unknown",
+    observation: (r.observation as string) ?? "",
+    relevance: (r.relevance as string) ?? "",
+    horizon: (r.horizon as SurfacedAwareness["horizon"]) ?? "immediate",
+  };
+  if (r.clinical_basis !== undefined) result.clinical_basis = r.clinical_basis as string;
+  return result;
+}
+
+function normalizeHumanAction(raw: unknown): HumanActionRequired {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const result: HumanActionRequired = {
+    id: (r.id as string) ?? "req_unknown",
+    action: (r.action as string) ?? "",
+    owner: (r.owner as string) ?? "",
+    deadline: (r.deadline as string) ?? "",
+    consequence: (r.consequence as string) ?? "",
+    urgency: (r.urgency as HumanActionRequired["urgency"]) ?? "monitor",
+  };
+  if (r.patient_impact !== undefined) result.patient_impact = r.patient_impact as string;
+  return result;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,10 +170,10 @@ function normalizeEvaluatorOutput(raw: Record<string, unknown>): EvaluatorOutput
   return {
     risk_level: (raw.risk_level as EvaluatorOutput["risk_level"]) ?? "medium",
     confidence: (raw.confidence as number) ?? 0.5,
-    affected_domains: (raw.affected_domains as string[]) ?? [],
-    recommended_actions: (raw.recommended_actions as string[]) ?? [],
+    affected_domains: Array.isArray(raw.affected_domains) ? (raw.affected_domains as string[]) : [],
+    recommended_actions: [],
     reasoning_summary: (raw.reasoning_summary as string) ?? "",
-    next_checks: (raw.next_checks as string[]) ?? [],
+    next_checks: Array.isArray(raw.next_checks) ? (raw.next_checks as string[]) : [],
     decision_type:
       (raw.decision_type as EvaluatorOutput["decision_type"]) ?? "recommendation",
     impact_magnitude:
@@ -145,13 +182,35 @@ function normalizeEvaluatorOutput(raw: Record<string, unknown>): EvaluatorOutput
       (raw.reversibility as EvaluatorOutput["reversibility"]) ?? "reversible",
     human_review_required: (raw.human_review_required as boolean) ?? false,
     human_review_reason: (raw.human_review_reason as string) ?? "",
-    novel_factors: (raw.novel_factors as string[]) ?? [],
-    causal_chain: (raw.causal_chain as string[]) ?? [],
-    downstream_dependencies: (raw.downstream_dependencies as string[]) ?? [],
+    novel_factors: Array.isArray(raw.novel_factors) ? (raw.novel_factors as string[]) : [],
+    causal_chain: Array.isArray(raw.causal_chain) ? (raw.causal_chain as string[]) : [],
+    downstream_dependencies: Array.isArray(raw.downstream_dependencies)
+      ? (raw.downstream_dependencies as string[])
+      : [],
     frequency_context: (raw.frequency_context as EvaluatorOutput["frequency_context"]) ?? {
       decision_type_seen_before: false,
       note: "",
     },
+    // Three typed arrays — normalize each item to ensure required fields are present
+    agent_actions_taken: Array.isArray(raw.agent_actions_taken)
+      ? raw.agent_actions_taken.map(normalizeAgentAction)
+      : [],
+    surfaced_for_awareness: Array.isArray(raw.surfaced_for_awareness)
+      ? raw.surfaced_for_awareness.map(normalizeSurfacedAwareness)
+      : [],
+    human_actions_required: Array.isArray(raw.human_actions_required)
+      ? raw.human_actions_required.map(normalizeHumanAction)
+      : [],
+    // Cross-reference IDs — safe string array defaults
+    resolves_prior_actions: Array.isArray(raw.resolves_prior_actions)
+      ? (raw.resolves_prior_actions as string[])
+      : [],
+    missed_prior_actions: Array.isArray(raw.missed_prior_actions)
+      ? (raw.missed_prior_actions as string[])
+      : [],
+    supersedes_prior_actions: Array.isArray(raw.supersedes_prior_actions)
+      ? (raw.supersedes_prior_actions as string[])
+      : [],
   };
 }
 
@@ -234,30 +293,21 @@ export async function POST(request: NextRequest) {
 
   const event = scenarioEvents[eventIndex];
 
-  // Eagerly load the full employee profile as baseline context
-  const allEmployees = loadEmployees();
-  const employee = allEmployees.find((e) => e.scenario_id === scenarioId);
+  // Compute formatted event date for action register
+  const monitoringStartDate =
+    domainConfig.timeline.monitoringStartDates[scenarioId] ??
+    new Date().toISOString().split("T")[0];
+  const eventDate = formatEventDate(
+    monitoringStartDate,
+    event.day_offset ?? 0,
+    domainConfig.timeline.granularity
+  ).primary;
 
-  let baselineContext = "";
-  if (employee) {
-    const employeeRecord = getEmployee(employee.employee_id);
-    const assignment = getAssignment(employee.employee_id);
-    const visaCase = getVisaCase(employee.case_id);
-    const payroll = getPayrollStatus(employee.employee_id);
-
-    baselineContext = `
-EMPLOYEE PROFILE (pre-fetched baseline — do not re-fetch unless investigating a specific change):
-${JSON.stringify(employeeRecord, null, 2)}
-
-ASSIGNMENT CONTEXT (employee + country rule + policy):
-${JSON.stringify(assignment, null, 2)}
-
-VISA CASE:
-${JSON.stringify(visaCase, null, 2)}
-
-PAYROLL STATUS:
-${JSON.stringify(payroll, null, 2)}`;
-  }
+  // Fetch baseline context via domain config — no mobility-specific calls in this route
+  const baselineData = await domainConfig.getBaselineContext(scenarioId);
+  const baselineContext = Object.keys(baselineData).length > 0
+    ? `BASELINE CONTEXT (pre-fetched — do not re-fetch unless investigating a specific change):\n${JSON.stringify(baselineData, null, 2)}`
+    : "";
 
   const priorEventTypes =
     eventIndex > 0
@@ -266,6 +316,40 @@ ${JSON.stringify(payroll, null, 2)}`;
           .map((e) => e.event_type)
           .join(" → ")
       : "none (this is the first signal)";
+
+  // Build register context so Claude continues ID numbering and cross-references correctly
+  const existingRegister = getActionRegister(scenarioId);
+  const activeReqs = existingRegister.filter((e) => e.status === "active");
+  const allReqs = existingRegister;
+  let registerContext = "";
+  if (allReqs.length > 0) {
+    const maxReqNum = allReqs
+      .map((e) => parseInt(e.id.replace("req_", ""), 10))
+      .filter((n) => !isNaN(n))
+      .reduce((a, b) => Math.max(a, b), 0);
+    const nextId = `req_${String(maxReqNum + 1).padStart(3, "0")}`;
+    const allLines = allReqs.map(
+      (e) => `  ${e.id} [${e.status}]: ${e.action.slice(0, 100)}`
+    );
+    const activeLines = activeReqs.length > 0
+      ? activeReqs.map((e) => `  ${e.id}: ${e.action.slice(0, 100)}`).join("\n")
+      : "  (none)";
+    registerContext = `
+PRIOR ACTION REGISTER:
+All IDs issued so far (NEVER reuse any of these IDs in human_actions_required):
+${allLines.join("\n")}
+
+Next available req ID: ${nextId}
+
+Currently ACTIVE requirements (status=active) that a human has not yet acted on:
+${activeLines}
+
+MANDATORY CROSS-REFERENCE RULES — apply these NOW before generating output:
+1. missed_prior_actions — If this signal provides evidence that an ACTIVE req's deadline has ALREADY PASSED without completion (e.g. the event type says "deadline_missed", "overdue", "suspended", or the payload confirms the action was never taken), you MUST list that req's ID here.
+2. resolves_prior_actions — If this signal confirms an ACTIVE req's action has been completed (e.g. document submitted, approval received, payroll set up), list its ID here.
+3. supersedes_prior_actions — If you issue a more urgent version of an ACTIVE req, list the original ID here.
+`;
+  }
 
   const userMessage = `NEW SIGNAL — ${scenarioId}
 Signal ${eventIndex + 1} of ${totalEvents}
@@ -284,7 +368,7 @@ NEW EVENT PAYLOAD:
 ${JSON.stringify(event.payload, null, 2)}
 
 ${baselineContext}
-
+${registerContext}
 Using the baseline profile above and the available tools, investigate the impact of this specific new signal. Call tools only to look up information not already provided above or to check something the new signal directly affects. Then output your risk assessment as a single JSON object — no prose before or after it.`;
 
   // Agentic tool_use loop
@@ -339,7 +423,6 @@ Using the baseline profile above and the available tools, investigate the impact
 
       let toolResult: unknown;
       if (toolUse.name === "get_recent_signals") {
-        // Intercept to cap at current event index and use path-specific file
         toolResult = getRecentSignals(
           toolInput.scenario_id as string,
           eventIndex,
@@ -399,12 +482,8 @@ Using the baseline profile above and the available tools, investigate the impact
       evaluation: finalEvaluation,
     };
 
-    const updatedState = recordPendingIntervention(
-      scenarioId,
-      totalEvents,
-      record,
-      pending
-    );
+    recordPendingIntervention(scenarioId, totalEvents, record, pending);
+    updateActionRegister(scenarioId, finalEvaluation, eventIndex, eventDate);
 
     return NextResponse.json({
       requires_intervention: true,
@@ -412,10 +491,11 @@ Using the baseline profile above and the available tools, investigate the impact
       evaluation: finalEvaluation,
       tool_trace: toolCallTrace,
       intervention_options: domainConfig.interventionOptions,
+      action_register: getRegisterAtEventIndex(scenarioId, eventIndex),
       progress: {
         current_event_index: eventIndex,
-        next_event_index: eventIndex, // stays — agent paused
-        total_events: updatedState.totalEvents,
+        next_event_index: eventIndex,
+        total_events: totalEvents,
         complete: false,
       },
     });
@@ -434,12 +514,14 @@ Using the baseline profile above and the available tools, investigate the impact
   };
 
   const updatedState = recordEvaluation(scenarioId, totalEvents, record);
+  updateActionRegister(scenarioId, finalEvaluation, eventIndex, eventDate);
 
   return NextResponse.json({
     requires_intervention: false,
     event,
     evaluation: finalEvaluation,
     tool_trace: toolCallTrace,
+    action_register: getRegisterAtEventIndex(scenarioId, eventIndex),
     progress: {
       current_event_index: eventIndex,
       next_event_index: updatedState.currentEventIndex,

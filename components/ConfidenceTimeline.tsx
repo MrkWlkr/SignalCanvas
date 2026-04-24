@@ -77,7 +77,7 @@ export default function ConfidenceTimeline({ evaluations, events }: Props) {
       risk_level: ev.evaluation.risk_level,
       event_category: event?.event_category,
       affected_domains: ev.evaluation.affected_domains,
-      first_action: ev.evaluation.recommended_actions[0] ?? "",
+      first_action: ev.evaluation.recommended_actions?.[0] ?? "",
     };
   });
 

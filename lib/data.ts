@@ -69,7 +69,12 @@ export interface SignalEvent {
   scenario_id: string;
   timestamp_offset_sec: number;
   event_type: string;
+  event_category?: string;
+  source_system?: string;
+  day_offset?: number;
   entity_id: string;
+  acted_on?: boolean;
+  unactioned_recommendation_indices?: number[];
   payload: Record<string, unknown>;
 }
 

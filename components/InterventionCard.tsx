@@ -160,13 +160,13 @@ export default function InterventionCard({
         )}
 
         {/* ── Recommended actions ──────────────────────────────────────── */}
-        {evaluation.recommended_actions?.length > 0 && (
+        {(evaluation.recommended_actions?.length ?? 0) > 0 && (
           <div className="rounded-lg border border-gray-800 bg-gray-900 px-4 py-3">
             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">
               Recommended Actions
             </div>
             <ol className="flex flex-col gap-2">
-              {evaluation.recommended_actions.map((action, i) => (
+              {(evaluation.recommended_actions ?? []).map((action, i) => (
                 <li key={i} className="flex gap-2 items-start">
                   <span className="text-xs text-blue-500 font-mono w-4 flex-shrink-0 pt-0.5">
                     {i + 1}.

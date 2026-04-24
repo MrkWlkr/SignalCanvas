@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { domainConfig } from "@/lib/domain-config";
-import { getState, resolveIntervention } from "@/lib/state";
+import { getState, resolveIntervention, updateActionRegister } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
+import { formatEventDate } from "@/lib/dates";
 import type { HumanDecision } from "@/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 2. Look up the selected option from config (generic — works for any domain)
+  // 2. Look up the selected option from config
   const option = domainConfig.interventionOptions.find((o) => o.id === option_id);
   if (!option) {
     return NextResponse.json(
@@ -110,7 +111,44 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 5. Resolve: update evaluation record, switch path, advance index
+  // 5. Compute event date for the intervention event
+  const pendingIntervention = currentState.pendingIntervention;
+  const currentPath = currentState.currentPath;
+  const eventsFilePath =
+    domainConfig.scenarioPaths[scenarioId]?.[currentPath] ??
+    domainConfig.scenarioPaths[scenarioId]?.["default"];
+
+  let eventDate = new Date().toISOString().split("T")[0];
+  if (eventsFilePath) {
+    const allEvents = loadSignalEventsFromPath(eventsFilePath);
+    const scenarioEvents = allEvents.filter((e) => e.scenario_id === scenarioId);
+    const interventionEvent = scenarioEvents[pendingIntervention.event_index];
+    if (interventionEvent) {
+      const monitoringStartDate =
+        domainConfig.timeline.monitoringStartDates[scenarioId] ??
+        new Date().toISOString().split("T")[0];
+      eventDate = formatEventDate(
+        monitoringStartDate,
+        interventionEvent.day_offset ?? 0,
+        domainConfig.timeline.granularity
+      ).primary;
+    }
+  }
+
+  // 6. If human approved, mark the pending human_actions_required as resolved
+  const pendingEval = pendingIntervention.evaluation;
+  if (option_id === "approve" && pendingEval.human_actions_required.length > 0) {
+    const humanResolvedIds = pendingEval.human_actions_required.map((r) => r.id);
+    updateActionRegister(
+      scenarioId,
+      pendingEval,
+      pendingIntervention.event_index,
+      eventDate,
+      humanResolvedIds
+    );
+  }
+
+  // 7. Resolve: update evaluation record, switch path, advance index
   const updatedState = resolveIntervention(
     scenarioId,
     humanDecision,
