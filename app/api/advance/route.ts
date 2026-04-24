@@ -22,6 +22,38 @@ const client = new Anthropic({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Rate limiter — 40 calls per IP per hour, global singleton (survives HMR)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface RateLimitEntry {
+  count: number;
+  windowStart: number;
+}
+
+const rateLimitRef = global as typeof globalThis & {
+  advanceRateLimit?: Map<string, RateLimitEntry>;
+};
+if (!rateLimitRef.advanceRateLimit) {
+  rateLimitRef.advanceRateLimit = new Map<string, RateLimitEntry>();
+}
+const rateLimitStore = rateLimitRef.advanceRateLimit;
+
+const RATE_LIMIT_MAX = 40;
+const RATE_LIMIT_WINDOW_MS = 3_600_000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count += 1;
+  return true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Generic threshold evaluator — zero mobility-specific logic lives here.
 // Operates on the InterventionThresholds shape from any DomainConfig.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,6 +160,18 @@ function normalizeEvaluatorOutput(raw: Record<string, unknown>): EvaluatorOutput
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
+
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Demo rate limit reached. Please try again in an hour." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
   const { scenarioId, eventIndex: requestedIndex } = body as {
     scenarioId: string;

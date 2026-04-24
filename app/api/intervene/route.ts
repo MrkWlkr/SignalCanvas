@@ -4,11 +4,55 @@ import { getState, resolveIntervention } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
 import type { HumanDecision } from "@/types";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Rate limiter — 40 calls per IP per hour, global singleton (survives HMR)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface RateLimitEntry {
+  count: number;
+  windowStart: number;
+}
+
+const rateLimitRef = global as typeof globalThis & {
+  interveneRateLimit?: Map<string, RateLimitEntry>;
+};
+if (!rateLimitRef.interveneRateLimit) {
+  rateLimitRef.interveneRateLimit = new Map<string, RateLimitEntry>();
+}
+const rateLimitStore = rateLimitRef.interveneRateLimit;
+
+const RATE_LIMIT_MAX = 40;
+const RATE_LIMIT_WINDOW_MS = 3_600_000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count += 1;
+  return true;
+}
+
 // POST /api/intervene
 // Handles the human's response to a pending intervention.
 // Reads all option behaviour from domainConfig — zero domain-specific logic here.
 
 export async function POST(request: NextRequest) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
+
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Demo rate limit reached. Please try again in an hour." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json();
   const { scenarioId, decision_id, option_id, modified_actions } = body as {
     scenarioId: string;
