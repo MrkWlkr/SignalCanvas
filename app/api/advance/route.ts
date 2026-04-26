@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { domainConfig } from "@/lib/domain-config";
+import { getBaselineContext } from "@/lib/server/baseline-context";
 import type { InterventionThresholds, InterventionRule } from "@/lib/domain-config";
 import { TOOL_DEFINITIONS, executeTool, getRecentSignals } from "@/lib/tools";
 import { loadSignalEventsFromPath } from "@/lib/data";
@@ -304,7 +305,7 @@ export async function POST(request: NextRequest) {
   ).primary;
 
   // Fetch baseline context via domain config — no mobility-specific calls in this route
-  const baselineData = await domainConfig.getBaselineContext(scenarioId);
+  const baselineData = await getBaselineContext(scenarioId);
   const baselineContext = Object.keys(baselineData).length > 0
     ? `BASELINE CONTEXT (pre-fetched — do not re-fetch unless investigating a specific change):\n${JSON.stringify(baselineData, null, 2)}`
     : "";

@@ -72,9 +72,6 @@ export interface DomainConfig {
   };
   canvas: CanvasConfig;
   timeline: TimelineConfig;
-  // Fetch domain-specific baseline context for a scenario.
-  // Swapping domains requires only a new implementation here — zero route changes.
-  getBaselineContext: (entityId: string) => Promise<Record<string, unknown>>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -262,18 +259,6 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
     deadlineField: "days_to_start",
   },
 
-  getBaselineContext: async (scenarioId: string): Promise<Record<string, unknown>> => {
-    const { loadEmployees } = await import("@/lib/data");
-    const { getEmployee, getAssignment, getVisaCase, getPayrollStatus } = await import("@/lib/tools");
-    const allEmployees = loadEmployees();
-    const employee = allEmployees.find((e: { scenario_id: string }) => e.scenario_id === scenarioId);
-    if (!employee) return {};
-    const employeeRecord = getEmployee((employee as { employee_id: string }).employee_id);
-    const assignment = getAssignment((employee as { employee_id: string }).employee_id);
-    const visaCase = getVisaCase((employee as { case_id: string }).case_id);
-    const payroll = getPayrollStatus((employee as { employee_id: string }).employee_id);
-    return { employee: employeeRecord, assignment, visaCase, payroll };
-  },
 };
 
 // Single named export — swap this to switch domains
