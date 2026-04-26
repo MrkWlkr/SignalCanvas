@@ -1,7 +1,8 @@
 "use client";
 
-import type { ScenarioApiResponse, StateApiResponse } from "@/types";
+import type { ScenarioApiResponse, StateApiResponse, ActionRegisterEntry } from "@/types";
 import { formatEventType, getRiskColors, riskBorderHex } from "@/components/ui";
+import ActionRegister from "@/components/ActionRegister";
 
 const SCENARIOS = [
   {
@@ -25,6 +26,9 @@ interface Props {
   activeScenario: string;
   currentPath: string;
   hasPendingIntervention: boolean;
+  actionRegister: ActionRegisterEntry[];
+  selectedEventIndex: number | null;
+  onRegisterEntryClick: (eventIndex: number | null) => void;
   onScenarioChange: (id: string) => void;
   onAdvance: () => void;
   onReset: () => void;
@@ -47,6 +51,9 @@ export default function ScenarioPanel({
   activeScenario,
   currentPath,
   hasPendingIntervention,
+  actionRegister,
+  selectedEventIndex,
+  onRegisterEntryClick,
   onScenarioChange,
   onAdvance,
   onReset,
@@ -223,6 +230,15 @@ export default function ScenarioPanel({
           </div>
         </div>
       )}
+
+      {/* Action Register */}
+      <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+        <ActionRegister
+          register={actionRegister}
+          selectedEventIndex={selectedEventIndex}
+          onEntryClick={onRegisterEntryClick}
+        />
+      </div>
 
       {/* Progress */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">

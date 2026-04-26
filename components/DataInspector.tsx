@@ -45,7 +45,6 @@ export default function DataInspector({
   selected,
   latest,
   selectedActedOn,
-  unactionedIndices = [],
   onClearSelection,
 }: Props) {
   const [jsonOpen, setJsonOpen] = useState(false);
@@ -143,36 +142,28 @@ export default function DataInspector({
         </div>
       )}
 
-      {/* Recommended actions */}
+      {/* Human actions required */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-xs text-gray-500 uppercase tracking-wider">Recommended Actions</div>
-          {notActedOn && <span className="text-xs text-amber-700 italic">not acted on</span>}
+          <div className="text-xs text-gray-500 uppercase tracking-wider">Actions Required</div>
         </div>
-        {(evaluation.recommended_actions?.length ?? 0) === 0 ? (
+        {(evaluation.human_actions_required?.length ?? 0) === 0 ? (
           <div className="text-gray-600 text-sm">None</div>
         ) : (
           <ol className="flex flex-col gap-2.5">
-            {(evaluation.recommended_actions ?? []).map((action, i) => {
-              const wasUnactioned = notActedOn && unactionedIndices.includes(i);
+            {(evaluation.human_actions_required ?? []).map((req, i) => {
               const isFirst = i === 0;
               return (
-                <li key={i} className="flex gap-3 items-start">
-                  <span className={`text-xs font-mono w-5 flex-shrink-0 pt-0.5 ${wasUnactioned ? "text-amber-800" : "text-blue-400"}`}>
+                <li key={req.id} className="flex gap-3 items-start">
+                  <span className="text-xs font-mono w-5 flex-shrink-0 pt-0.5 text-blue-400">
                     {i + 1}.
                   </span>
-                  <span className={`leading-snug ${
-                    wasUnactioned
-                      ? "text-sm text-gray-500"
-                      : isFirst
-                      ? "text-sm font-semibold text-white"
-                      : "text-sm text-gray-300"
-                  }`}>
-                    {action}
-                    {wasUnactioned && (
-                      <span className="ml-2 text-xs text-red-500 font-medium">[Not acted on]</span>
-                    )}
-                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className={`leading-snug ${isFirst ? "text-sm font-semibold text-white" : "text-sm text-gray-300"}`}>
+                      {req.action}
+                    </span>
+                    <span className="text-xs text-gray-500">{req.owner} · {req.deadline}</span>
+                  </div>
                 </li>
               );
             })}

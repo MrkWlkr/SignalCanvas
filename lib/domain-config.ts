@@ -5,15 +5,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { EvaluatorOutput } from "@/types";
-import {
-  loadEmployees,
-} from "@/lib/data";
-import {
-  getEmployee,
-  getAssignment,
-  getVisaCase,
-  getPayrollStatus,
-} from "@/lib/tools";
 
 export interface CanvasConfig {
   kpiLabel: string;
@@ -111,7 +102,9 @@ missed_prior_actions: IDs of ACTIVE register entries whose deadline has NOW PASS
 
 supersedes_prior_actions: IDs of ACTIVE register entries replaced by a more urgent version you are issuing in this evaluation.
 
-HUMAN_ACTIONS_REQUIRED — POSITIVE EVENTS: If this signal is a positive milestone (approval received, document submitted, payroll set up, assignment cleared), human_actions_required MUST be empty [] unless a new specific action is still outstanding. Do not generate human action items on events that confirm progress or resolution.
+HUMAN_ACTIONS_REQUIRED — POSITIVE EVENTS: If this signal is a positive milestone (approval received, document submitted, payroll set up, assignment cleared, policy exception approved, travel cleared), human_actions_required MUST be empty []. Do NOT generate new human action items on events that confirm progress, resolution, or clearance. This rule is ABSOLUTE — no exceptions, no "just in case" items.
+
+RESOLVES_PRIOR_ACTIONS — MILESTONE RESOLUTION: When a positive milestone event occurs, you MUST scan every ACTIVE register entry and include in resolves_prior_actions all IDs whose required action is now confirmed complete by this event. For example: if "document_submitted_on_time" occurs, resolve all active reqs about submitting documents. If "policy_exception_approved", resolve all active reqs about obtaining policy approval. If "host_payroll_setup_initiated" or "assignment_cleared_for_travel", resolve all remaining active reqs that are now moot because the case has progressed past them. When a case reaches its final milestone (assignment cleared, travel authorized), ALL remaining active register entries must be resolved or superseded — none should remain active.
 
 CONFIDENCE SCORING:
 Score confidence to reflect accumulated evidence — not worst-case extrapolation. Early signals: 0.25-0.45. Multiple converging factors: 0.65-0.85. Confirmed blockers with missed deadlines: 0.88-0.95.
@@ -270,13 +263,15 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
   },
 
   getBaselineContext: async (scenarioId: string): Promise<Record<string, unknown>> => {
+    const { loadEmployees } = await import("@/lib/data");
+    const { getEmployee, getAssignment, getVisaCase, getPayrollStatus } = await import("@/lib/tools");
     const allEmployees = loadEmployees();
-    const employee = allEmployees.find((e) => e.scenario_id === scenarioId);
+    const employee = allEmployees.find((e: { scenario_id: string }) => e.scenario_id === scenarioId);
     if (!employee) return {};
-    const employeeRecord = getEmployee(employee.employee_id);
-    const assignment = getAssignment(employee.employee_id);
-    const visaCase = getVisaCase(employee.case_id);
-    const payroll = getPayrollStatus(employee.employee_id);
+    const employeeRecord = getEmployee((employee as { employee_id: string }).employee_id);
+    const assignment = getAssignment((employee as { employee_id: string }).employee_id);
+    const visaCase = getVisaCase((employee as { case_id: string }).case_id);
+    const payroll = getPayrollStatus((employee as { employee_id: string }).employee_id);
     return { employee: employeeRecord, assignment, visaCase, payroll };
   },
 };

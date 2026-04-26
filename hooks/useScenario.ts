@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput } from "@/types";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput, ActionRegisterEntry } from "@/types";
 import type { InterventionOption } from "@/lib/domain-config";
 
 export interface PendingInterventionState {
@@ -19,9 +19,25 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
   const [pendingIntervention, setPendingIntervention] =
     useState<PendingInterventionState | null>(null);
   const [currentPath, setCurrentPath] = useState("default");
+  const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
 
   const playingRef = useRef(false);
   const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const actionRegister = useMemo((): ActionRegisterEntry[] => {
+    if (!stateData) return [];
+    if (selectedEventIndex === null) return stateData.action_register ?? [];
+    const record = stateData.evaluations.find((e) => e.event_index === selectedEventIndex);
+    return record?.registerSnapshot ?? stateData.action_register ?? [];
+  }, [stateData, selectedEventIndex]);
+
+  const selectEvent = useCallback((index: number | null) => {
+    setSelectedEventIndex(index);
+  }, []);
+
+  const highlightCanvasNode = useCallback((index: number | null) => {
+    setSelectedEventIndex(index);
+  }, []);
 
   // ── Fetchers ──────────────────────────────────────────────────────────────
 
@@ -224,6 +240,7 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     setError(null);
     setPendingIntervention(null);
     setCurrentPath("default");
+    setSelectedEventIndex(null);
     try {
       await fetch("/api/reset", {
         method: "POST",
@@ -254,5 +271,10 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     pendingIntervention,
     intervene,
     currentPath,
+    selectedEventIndex,
+    setSelectedEventIndex,
+    actionRegister,
+    selectEvent,
+    highlightCanvasNode,
   };
 }

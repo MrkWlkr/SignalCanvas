@@ -9,8 +9,9 @@ import { SPINE_NODE_WIDTH, SPINE_NODE_HEIGHT } from "@/lib/canvas-data";
 // It adapts its visual state based on selection, compression, latest, and intervention flags.
 
 export function SpineNode({ data }: { data: SpineNodeData }) {
-  const { evaluation, eventType, eventCategory, dayOffset, isSelected,
-          isCompressed, isLatest, hasIntervention, isAdvancing } = data;
+  const { evaluation, eventType, eventCategory, dayOffset, formattedDate,
+          isSelected, isCompressed, isLatest, hasIntervention,
+          isRegisterHighlighted, isAdvancing } = data;
 
   const risk = evaluation.risk_level;
   const borderColor = riskBorderHex[risk] ?? "#4b5563";
@@ -48,10 +49,11 @@ export function SpineNode({ data }: { data: SpineNodeData }) {
     );
   }
 
-  // ── Normal / selected / latest state ────────────────────────────────────────
-  const ringColor = isSelected ? borderColor : "transparent";
+  // ── Normal / selected / latest / register-highlighted state ─────────────────
   const boxShadow = isSelected
     ? `0 0 0 2px ${borderColor}, 0 4px 20px ${borderColor}33`
+    : isRegisterHighlighted
+    ? `0 0 0 2px #e5e7eb, 0 4px 16px #e5e7eb33`
     : isLatest
     ? `0 0 14px ${borderColor}33`
     : "none";
@@ -65,7 +67,7 @@ export function SpineNode({ data }: { data: SpineNodeData }) {
           width: SPINE_NODE_WIDTH,
           minHeight: SPINE_NODE_HEIGHT,
           background: "#111827",
-          border: `1.5px solid ${isSelected ? borderColor : "#1f2937"}`,
+          border: `1.5px solid ${isSelected ? borderColor : isRegisterHighlighted ? "#e5e7eb" : "#1f2937"}`,
           borderRadius: 8,
           overflow: "visible",
           cursor: "pointer",
@@ -172,12 +174,15 @@ export function SpineNode({ data }: { data: SpineNodeData }) {
             )}
           </div>
 
-          {/* Day offset */}
-          {dayOffset != null && (
-            <div style={{ fontSize: 9, color: "#4b5563", marginTop: 4 }}>
-              Day {dayOffset}
+          {/* Date display */}
+          {formattedDate ? (
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontSize: 9, color: "#6b7280" }}>{formattedDate.primary}</div>
+              <div style={{ fontSize: 9, color: "#374151" }}>{formattedDate.secondary}</div>
             </div>
-          )}
+          ) : dayOffset != null ? (
+            <div style={{ fontSize: 9, color: "#4b5563", marginTop: 4 }}>Day {dayOffset}</div>
+          ) : null}
 
           {/* Domain pills — only when selected */}
           {isSelected && evaluation.affected_domains.length > 0 && (

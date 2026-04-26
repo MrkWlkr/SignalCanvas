@@ -30,6 +30,10 @@ export default function Dashboard() {
     pendingIntervention,
     intervene,
     currentPath,
+    selectedEventIndex,
+    actionRegister,
+    selectEvent,
+    highlightCanvasNode,
   } = useScenario(activeScenario);
 
   const events = scenarioData?.events ?? [];
@@ -74,6 +78,9 @@ export default function Dashboard() {
               activeScenario={activeScenario}
               currentPath={currentPath}
               hasPendingIntervention={hasPendingIntervention}
+              actionRegister={actionRegister}
+              selectedEventIndex={selectedEventIndex}
+              onRegisterEntryClick={highlightCanvasNode}
               onScenarioChange={handleScenarioChange}
               onAdvance={handleAdvance}
               onReset={handleReset}
@@ -92,6 +99,9 @@ export default function Dashboard() {
             advancing={advancing}
             pendingIntervention={pendingIntervention}
             onIntervene={intervene}
+            scenarioId={activeScenario}
+            selectedEventIndex={selectedEventIndex}
+            onSelectEvent={selectEvent}
           />
         </div>
       </div>

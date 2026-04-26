@@ -40,20 +40,39 @@ const nodeTypes = {
 const KPI_HEIGHT = 80; // px of KPI band overlaid at top of canvas
 
 // ── CanvasController — lives inside ReactFlow provider, handles auto-pan ──────
-function CanvasController({ latestNodeId }: { latestNodeId: string | null }) {
+function CanvasController({
+  latestNodeId,
+  highlightedNodeId,
+}: {
+  latestNodeId: string | null;
+  highlightedNodeId: string | null;
+}) {
   const { fitView } = useReactFlow();
-  const prevIdRef = useRef<string | null>(null);
+  const prevLatestRef = useRef<string | null>(null);
+  const prevHighlightRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (latestNodeId && latestNodeId !== prevIdRef.current) {
-      prevIdRef.current = latestNodeId;
-      // Brief delay allows React Flow to settle the layout after node addition
+    if (latestNodeId && latestNodeId !== prevLatestRef.current) {
+      prevLatestRef.current = latestNodeId;
       const t = setTimeout(() => {
         fitView({ nodes: [{ id: latestNodeId }], duration: 500, padding: 0.35 });
       }, 60);
       return () => clearTimeout(t);
     }
   }, [latestNodeId, fitView]);
+
+  useEffect(() => {
+    if (highlightedNodeId && highlightedNodeId !== prevHighlightRef.current) {
+      prevHighlightRef.current = highlightedNodeId;
+      const t = setTimeout(() => {
+        fitView({ nodes: [{ id: highlightedNodeId }], duration: 400, padding: 0.35 });
+      }, 60);
+      return () => clearTimeout(t);
+    }
+    if (!highlightedNodeId) {
+      prevHighlightRef.current = null;
+    }
+  }, [highlightedNodeId, fitView]);
 
   return null;
 }
@@ -66,6 +85,9 @@ export interface AgentCanvasProps {
   advancing: boolean;
   pendingIntervention: PendingInterventionState | null;
   onIntervene: (optionId: string) => Promise<void>;
+  scenarioId: string;
+  selectedEventIndex: number | null;
+  onSelectEvent: (index: number | null) => void;
 }
 
 // ── AgentCanvas — primary canvas orchestrator ─────────────────────────────────
@@ -81,6 +103,9 @@ export function AgentCanvas({
   advancing,
   pendingIntervention,
   onIntervene,
+  scenarioId,
+  selectedEventIndex,
+  onSelectEvent,
 }: AgentCanvasProps) {
   const [selectedSpineId, setSelectedSpineId] = useState<string | null>(null);
   const [openSourceId, setOpenSourceId] = useState<string | null>(null);
@@ -118,8 +143,8 @@ export function AgentCanvas({
   // ── Build all React Flow nodes ────────────────────────────────────────────
 
   const spineNodes = useMemo(
-    () => buildSpineNodes(evaluations, events, config, selectedSpineId, advancing),
-    [evaluations, events, config, selectedSpineId, advancing]
+    () => buildSpineNodes(evaluations, events, config, selectedSpineId, advancing, scenarioId, selectedEventIndex),
+    [evaluations, events, config, selectedSpineId, advancing, scenarioId, selectedEventIndex]
   );
 
   const sourceNodes = useMemo(() => {
@@ -169,21 +194,34 @@ export function AgentCanvas({
 
   const handleNodeClick: NodeMouseHandler = useCallback((_event, node) => {
     if (node.type === "spineNode") {
+      const isDeselecting = selectedSpineId === node.id;
       setSelectedSpineId((prev) => (prev === node.id ? null : node.id));
       setOpenSourceId(null);
+      const record = evaluations.find((r) => r.event_id === node.id);
+      if (record) {
+        onSelectEvent(isDeselecting ? null : record.event_index);
+      }
     } else if (node.type === "sourceNode") {
       setOpenSourceId((prev) => (prev === node.id ? null : node.id));
     }
-  }, []);
+  }, [selectedSpineId, evaluations, onSelectEvent]);
 
   const handlePaneClick = useCallback(() => {
     setSelectedSpineId(null);
     setOpenSourceId(null);
-  }, []);
+    onSelectEvent(null);
+  }, [onSelectEvent]);
 
   const handleMove: OnMove = useCallback((_event, vp) => {
     setViewport(vp);
   }, []);
+
+  // ── Register-driven highlight node ID for CanvasController pan ───────────
+  const highlightedNodeId = useMemo(() => {
+    if (selectedEventIndex === null) return null;
+    const record = evaluations.find((r) => r.event_index === selectedEventIndex);
+    return record?.event_id ?? null;
+  }, [selectedEventIndex, evaluations]);
 
   // ── Drawer data ───────────────────────────────────────────────────────────
   const selectedRecord = selectedSpineId
@@ -341,7 +379,7 @@ export function AgentCanvas({
             showInteractive={false}
             style={{ bottom: 16, left: 16, top: "auto" }}
           />
-          <CanvasController latestNodeId={latest?.event_id ?? null} />
+          <CanvasController latestNodeId={latest?.event_id ?? null} highlightedNodeId={highlightedNodeId} />
         </ReactFlow>
       )}
 
@@ -351,7 +389,9 @@ export function AgentCanvas({
           record={selectedRecord}
           eventType={selectedRecord.event_type}
           dayOffset={selectedEvent?.day_offset}
-          onClose={() => setSelectedSpineId(null)}
+          config={config}
+          scenarioId={scenarioId}
+          onClose={() => { setSelectedSpineId(null); onSelectEvent(null); }}
         />
       )}
 

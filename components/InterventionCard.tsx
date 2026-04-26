@@ -159,25 +159,30 @@ export default function InterventionCard({
           </div>
         )}
 
-        {/* ── Recommended actions ──────────────────────────────────────── */}
-        {(evaluation.recommended_actions?.length ?? 0) > 0 && (
+        {/* ── Human actions required ───────────────────────────────────── */}
+        {(evaluation.human_actions_required?.length ?? 0) > 0 && (
           <div className="rounded-lg border border-gray-800 bg-gray-900 px-4 py-3">
             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">
-              Recommended Actions
+              Actions Required
             </div>
             <ol className="flex flex-col gap-2">
-              {(evaluation.recommended_actions ?? []).map((action, i) => (
-                <li key={i} className="flex gap-2 items-start">
+              {(evaluation.human_actions_required ?? []).map((req, i) => (
+                <li key={req.id} className="flex gap-2 items-start">
                   <span className="text-xs text-blue-500 font-mono w-4 flex-shrink-0 pt-0.5">
                     {i + 1}.
                   </span>
-                  <span
-                    className={`text-sm leading-snug ${
-                      i === 0 ? "font-semibold text-white" : "text-gray-300"
-                    }`}
-                  >
-                    {action}
-                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span
+                      className={`text-sm leading-snug ${
+                        i === 0 ? "font-semibold text-white" : "text-gray-300"
+                      }`}
+                    >
+                      {req.action}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {req.owner} · {req.deadline}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ol>

@@ -182,10 +182,11 @@ export function updateActionRegister(
     }
   }
 
-  // 2. Mark system-resolved entries
+  // 2. Mark system-resolved entries (also recovers previously "missed" entries when
+  //    a subsequent signal confirms the action was eventually completed)
   for (const id of evaluation.resolves_prior_actions) {
     const entry = register.find((e) => e.id === id);
-    if (entry && entry.status === "active") {
+    if (entry && (entry.status === "active" || entry.status === "missed")) {
       entry.status = "resolved_system";
       entry.resolved_by = "system_event";
       entry.resolved_at = eventDate;

@@ -10,6 +10,7 @@ import { MarkerType } from "reactflow";
 import type { EvaluationRecord, ToolCallTrace, SignalEvent } from "@/types";
 import type { DomainConfig } from "@/lib/domain-config";
 import { riskBorderHex, riskStroke } from "@/components/ui";
+import { formatEventDate } from "@/lib/dates";
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 export const SPINE_Y = 160;
@@ -28,10 +29,12 @@ export interface SpineNodeData {
   eventType: string;
   eventCategory?: string;
   dayOffset?: number;
+  formattedDate: { primary: string; secondary: string } | null;
   isSelected: boolean;
   isCompressed: boolean;
   isLatest: boolean;
   hasIntervention: boolean;
+  isRegisterHighlighted: boolean;
   status: EvaluationRecord["status"];
   path: string;
   isAdvancing: boolean;
@@ -276,10 +279,13 @@ export function buildSpineNodes(
   events: SignalEvent[],
   config: DomainConfig,
   selectedId: string | null,
-  advancing: boolean
+  advancing: boolean,
+  scenarioId: string = "",
+  registerHighlightIndex: number | null = null
 ): Node<SpineNodeData>[] {
   const { nodeSpacingPx, compressAfterCount } = config.canvas;
   const eventMap = new Map(events.map((e) => [e.event_id, e]));
+  const monitoringStart = config.timeline.monitoringStartDates[scenarioId] ?? "";
 
   return evaluations.map((record, i) => {
     const event = eventMap.get(record.event_id);
@@ -287,6 +293,12 @@ export function buildSpineNodes(
     const isCompressed = i < evaluations.length - compressAfterCount;
     const isSelected = record.event_id === selectedId;
     const hasIntervention = record.human_decision !== undefined;
+    const isRegisterHighlighted = record.event_index === registerHighlightIndex;
+
+    const formattedDate =
+      monitoringStart && event?.day_offset != null
+        ? formatEventDate(monitoringStart, event.day_offset, config.timeline.granularity)
+        : null;
 
     return {
       id: record.event_id,
@@ -297,10 +309,12 @@ export function buildSpineNodes(
         eventType: record.event_type,
         eventCategory: event?.event_category,
         dayOffset: event?.day_offset,
+        formattedDate,
         isSelected,
         isCompressed,
         isLatest,
         hasIntervention,
+        isRegisterHighlighted,
         status: record.status,
         path: record.path,
         isAdvancing: advancing && isLatest,
