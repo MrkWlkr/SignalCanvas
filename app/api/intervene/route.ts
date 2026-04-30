@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { domainConfig } from "@/lib/domain-config";
+import { getConfigForScenario } from "@/lib/config-registry";
 import { getState, resolveIntervention, updateActionRegister } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
 import { formatEventDate } from "@/lib/dates";
@@ -68,6 +68,8 @@ export async function POST(request: NextRequest) {
   if (!option_id) {
     return NextResponse.json({ error: "option_id is required" }, { status: 400 });
   }
+
+  const domainConfig = getConfigForScenario(scenarioId);
 
   // 1. Verify there is a pending intervention to resolve
   const currentState = getState(scenarioId);

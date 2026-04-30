@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getState, initState } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
-import { domainConfig } from "@/lib/domain-config";
+import { getConfigForScenario } from "@/lib/config-registry";
 
 
 export async function GET(request: NextRequest) {
@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
 
   const existingState = getState(scenarioId);
   const currentPath = existingState?.currentPath ?? "default";
+  const domainConfig = getConfigForScenario(scenarioId);
 
   // Derive total events from the current path's file
   const eventsFilePath =

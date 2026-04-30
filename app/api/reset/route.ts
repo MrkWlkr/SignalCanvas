@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resetState } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
-import { domainConfig } from "@/lib/domain-config";
+import { getConfigForScenario } from "@/lib/config-registry";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
   if (!scenarioId) {
     return NextResponse.json({ error: "scenarioId is required" }, { status: 400 });
   }
+
+  const domainConfig = getConfigForScenario(scenarioId);
 
   // Always reset to the default path
   const defaultFilePath = domainConfig.scenarioPaths[scenarioId]?.["default"];
