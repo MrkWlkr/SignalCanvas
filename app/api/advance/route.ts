@@ -238,15 +238,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const { scenarioId, eventIndex: requestedIndex } = body as {
-    scenarioId: string;
-    eventIndex?: number;
-  };
+  let body: { scenarioId: string; eventIndex?: number };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  const { scenarioId, eventIndex: requestedIndex } = body;
 
   if (!scenarioId) {
     return NextResponse.json({ error: "scenarioId is required" }, { status: 400 });
   }
+
+  try {
 
   const domainConfig = getConfigForScenario(scenarioId);
   const currentState = getState(scenarioId);
@@ -472,14 +476,19 @@ Using the baseline profile above and the available tools, investigate the impact
   );
 
   // Helper: compute assertion results for test case scenarios
-  function computeAssertionResults(
+  const computeAssertionResults = (
     evaluationsMap: Record<number, Record<string, unknown>>
-  ): AssertionResult[] | undefined {
+  ): AssertionResult[] | undefined => {
     if (!domainConfig.isTestCase || !domainConfig.assertions) return undefined;
-    const results = evaluateAssertions(domainConfig.assertions, evaluationsMap);
-    updateAssertionResults(scenarioId, results);
-    return results;
-  }
+    try {
+      const results = evaluateAssertions(domainConfig.assertions, evaluationsMap);
+      updateAssertionResults(scenarioId, results);
+      return results;
+    } catch (e) {
+      console.error("[advance] assertion evaluation error:", e);
+      return undefined;
+    }
+  };
 
   if (requiresIntervention) {
     // Paused path: save as pending, do NOT advance event index
@@ -561,4 +570,10 @@ Using the baseline profile above and the available tools, investigate the impact
       complete: updatedState.currentEventIndex >= updatedState.totalEvents,
     },
   });
+
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[advance] unhandled error:", message, err);
+    return NextResponse.json({ error: `Internal error: ${message}` }, { status: 500 });
+  }
 }
