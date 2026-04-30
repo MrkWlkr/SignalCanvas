@@ -4,6 +4,7 @@ import type {
   HumanDecision,
   PendingIntervention,
   ActionRegisterEntry,
+  AssertionResult,
 } from "@/types";
 
 export interface ScenarioState {
@@ -13,8 +14,8 @@ export interface ScenarioState {
   currentPath: string;
   evaluations: EvaluationRecord[];
   pendingIntervention: PendingIntervention | null;
-  // Living action register — maintained across evaluations
   actionRegister: ActionRegisterEntry[];
+  assertionResults: AssertionResult[];
 }
 
 // Anchor to global so Next.js HMR doesn't reset the Map between hot reloads
@@ -41,6 +42,7 @@ export function initState(scenarioId: string, totalEvents: number): ScenarioStat
     evaluations: [],
     pendingIntervention: null,
     actionRegister: [],
+    assertionResults: [],
   };
   scenarioStates.set(scenarioId, fresh);
   return fresh;
@@ -62,6 +64,7 @@ export function recordEvaluation(
       evaluations: [],
       pendingIntervention: null,
       actionRegister: [],
+      assertionResults: [],
     };
   }
   state.evaluations.push(record);
@@ -88,6 +91,7 @@ export function recordPendingIntervention(
       evaluations: [],
       pendingIntervention: null,
       actionRegister: [],
+      assertionResults: [],
     };
   }
   state.evaluations.push(record);
@@ -140,6 +144,7 @@ export function resetState(scenarioId: string, totalEvents: number): ScenarioSta
     evaluations: [],
     pendingIntervention: null,
     actionRegister: [],
+    assertionResults: [],
   };
   scenarioStates.set(scenarioId, fresh);
   return fresh;
@@ -262,6 +267,24 @@ export function getRegisterAtEventIndex(
 // Returns the full living action register for a scenario
 export function getActionRegister(scenarioId: string): ActionRegisterEntry[] {
   return scenarioStates.get(scenarioId)?.actionRegister ?? [];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Assertion results — updated by advance/route.ts after each evaluation
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function updateAssertionResults(
+  scenarioId: string,
+  results: AssertionResult[]
+): void {
+  const state = scenarioStates.get(scenarioId);
+  if (!state) return;
+  state.assertionResults = results;
+  scenarioStates.set(scenarioId, state);
+}
+
+export function getAssertionResults(scenarioId: string): AssertionResult[] {
+  return scenarioStates.get(scenarioId)?.assertionResults ?? [];
 }
 
 // Re-export types needed by route files

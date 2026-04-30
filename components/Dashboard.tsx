@@ -1,17 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useScenario } from "@/hooks/useScenario";
 import ScenarioPanel from "@/components/ScenarioPanel";
 import { AgentCanvas } from "@/components/canvas/AgentCanvas";
-import { domainConfig } from "@/lib/domain-config";
-
-// ── Retired tabs (commented out — not deleted) ────────────────────────────────
-// import EventFeed from "@/components/EventFeed";
-// import PathwayView from "@/components/PathwayView"; // DEPRECATED: replaced by AgentCanvas
-// import ConfidenceTimeline from "@/components/ConfidenceTimeline";
-// import DataInspector from "@/components/DataInspector";
-// import InterventionCard from "@/components/InterventionCard"; // now rendered inside AgentCanvas
+import AssertionPanel from "@/components/AssertionPanel";
+import { testSuiteConfig } from "@/lib/configs/test-suite-config";
 
 export default function Dashboard() {
   const [activeScenario, setActiveScenario] = useState("SCENARIO_ESCALATING");
@@ -34,12 +28,25 @@ export default function Dashboard() {
     actionRegister,
     selectEvent,
     highlightCanvasNode,
+    activeDomainConfig,
+    assertionResults,
+    isTestCase,
+    testCaseId,
   } = useScenario(activeScenario);
 
   const events = scenarioData?.events ?? [];
   const evaluations = stateData?.evaluations ?? [];
+  const completedEvents = stateData?.current_event_index ?? 0;
+  const totalEvents = stateData?.total_events ?? 0;
 
   const hasPendingIntervention = pendingIntervention !== null;
+
+  // Resolve test case metadata for AssertionPanel
+  const testCaseMeta = useMemo(() => {
+    if (!isTestCase || !testCaseId) return null;
+    const key = testCaseId === "TC-001" ? "TC001" : "TC002";
+    return testSuiteConfig[key as keyof typeof testSuiteConfig] ?? null;
+  }, [isTestCase, testCaseId]);
 
   const handleAdvance = useCallback(async () => {
     await advance();
@@ -54,7 +61,25 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 57px)" }}>
+    <div
+      className="flex flex-col"
+      style={{
+        height: "calc(100vh - 57px)",
+        background: isTestCase ? "#080c14" : undefined,
+      }}
+    >
+      {/* TEST MODE banner */}
+      {isTestCase && (
+        <div className="flex items-center gap-3 px-4 py-1.5 bg-violet-950/70 border-b border-violet-800/50">
+          <span className="text-xs px-2 py-0.5 rounded bg-violet-800 text-violet-100 font-mono font-semibold tracking-wider">
+            TEST MODE
+          </span>
+          <span className="text-xs text-violet-300 font-mono">
+            Behavioral evaluation active — assertions evaluated after each event
+          </span>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-950 border-b border-red-800 text-red-300 text-xs px-4 py-2">
           {error}
@@ -90,12 +115,12 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* ── Agent canvas — takes all remaining space ──────────────────── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Agent canvas — takes remaining space ──────────────────────── */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <AgentCanvas
             evaluations={evaluations}
             events={events}
-            config={domainConfig}
+            config={activeDomainConfig}
             advancing={advancing}
             pendingIntervention={pendingIntervention}
             onIntervene={intervene}
@@ -104,6 +129,19 @@ export default function Dashboard() {
             onSelectEvent={selectEvent}
           />
         </div>
+
+        {/* ── Assertion panel — only in test mode ───────────────────────── */}
+        {isTestCase && testCaseMeta && (
+          <AssertionPanel
+            testCaseId={testCaseMeta.testCaseId}
+            testCaseTitle={testCaseMeta.title}
+            testCaseDescription={testCaseMeta.description}
+            propertyUnderTest={testCaseMeta.property_under_test}
+            assertions={assertionResults}
+            totalEvents={totalEvents}
+            completedEvents={completedEvents}
+          />
+        )}
       </div>
     </div>
   );

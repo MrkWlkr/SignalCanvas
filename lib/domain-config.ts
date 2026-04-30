@@ -4,6 +4,8 @@
 // must require zero changes to any API route or component.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { AssertionDefinition } from "@/types";
+
 
 export interface CanvasConfig {
   kpiLabel: string;
@@ -65,6 +67,13 @@ export interface DomainConfig {
   dataFiles: Record<string, string>;
   canvas: CanvasConfig;
   timeline: TimelineConfig;
+  // Behavioral test suite — only present on test case configs
+  isTestCase?: boolean;
+  testCaseId?: string;
+  testCaseTitle?: string;
+  testCaseDescription?: string;
+  propertyUnderTest?: string;
+  assertions?: AssertionDefinition[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

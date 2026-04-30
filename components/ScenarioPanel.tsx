@@ -12,6 +12,11 @@ const OPS_SCENARIOS = [
   { id: "SCENARIO_DEALER_PRICING", label: "Dealer Pricing", descriptor: "Silent pricing field corruption" },
 ];
 
+const TEST_SCENARIOS = [
+  { id: "SCENARIO_TC001", label: "TC-001", descriptor: "Intervention Timing · 4 events" },
+  { id: "SCENARIO_TC002", label: "TC-002", descriptor: "Missed Action Accountability · 4 events" },
+];
+
 interface Props {
   scenarioData: ScenarioApiResponse | null;
   stateData: StateApiResponse | null;
@@ -93,7 +98,7 @@ export default function ScenarioPanel({
           ))}
         </div>
         {/* Ops group */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-1.5">
           {OPS_SCENARIOS.map((s) => (
             <button
               key={s.id}
@@ -113,6 +118,31 @@ export default function ScenarioPanel({
               </div>
             </button>
           ))}
+        </div>
+        {/* Behavioral tests group */}
+        <div className="mb-1">
+          <div className="text-xs text-gray-600 uppercase tracking-wider mb-1 px-0.5">Behavioral Tests</div>
+          <div className="flex gap-2">
+            {TEST_SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => onScenarioChange(s.id)}
+                className={`flex-1 text-xs px-3 py-2 rounded-md border transition-colors text-left ${
+                  activeScenario === s.id
+                    ? "bg-violet-700 border-violet-500 text-white"
+                    : "bg-gray-900 border-gray-700 text-gray-400 hover:border-violet-700/60 hover:text-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold">{s.label}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-violet-900/50 text-violet-400 font-medium leading-none">Test</span>
+                </div>
+                <div className={`text-xs mt-0.5 ${activeScenario === s.id ? "text-violet-200" : "text-gray-600"}`}>
+                  {s.descriptor}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
         {/* Active path indicator */}
         <div className="mt-1.5 flex items-center gap-1.5">

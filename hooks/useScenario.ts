@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput, ActionRegisterEntry } from "@/types";
+import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput, ActionRegisterEntry, AssertionResult } from "@/types";
 import type { InterventionOption, DomainConfig } from "@/lib/domain-config";
 import { getConfigForScenario } from "@/lib/config-registry";
 
@@ -262,6 +262,10 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     }
   }, [scenarioId, fetchScenario, fetchState]);
 
+  const assertionResults: AssertionResult[] = stateData?.assertion_results ?? [];
+  const isTestCase = activeDomainConfig.isTestCase ?? false;
+  const testCaseId = activeDomainConfig.testCaseId ?? null;
+
   return {
     scenarioData,
     stateData,
@@ -282,5 +286,8 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     selectEvent,
     highlightCanvasNode,
     activeDomainConfig,
+    assertionResults,
+    isTestCase,
+    testCaseId,
   };
 }

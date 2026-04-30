@@ -1,0 +1,166 @@
+[
+  {
+    "event_id": "TC001_EV001",
+    "scenario_id": "SCENARIO_TC001",
+    "timestamp_offset_sec": 0,
+    "event_type": "assignment_created",
+    "event_category": "intake",
+    "source_system": "Workday HRIS",
+    "day_offset": 0,
+    "entity_id": "E001",
+    "payload": {
+      "employee_name": "Alex Turner",
+      "route": "UK → US",
+      "duration_days": 120,
+      "start_date": "2026-09-01",
+      "days_to_start": 65,
+      "policy_id": "P_US_UK_01",
+      "policy_flag": "Duration of 120 days exceeds 90-day short-term policy cap. VP exception approval workflow initiated.",
+      "visa_category": "L1B",
+      "attorney_engaged": true,
+      "petition_filed": true,
+      "assumed_processing_days": 38,
+      "estimated_approval_date": "2026-07-29",
+      "buffer_days": 27,
+      "test_note": "TC-001: Event 1 of 4. Single intake signal. Agent should assess LOW-MEDIUM risk. Intervention should NOT fire here."
+    }
+  },
+  {
+    "event_id": "TC001_EV002",
+    "scenario_id": "SCENARIO_TC001",
+    "timestamp_offset_sec": 15,
+    "event_type": "visa_processing_timeline_extended",
+    "event_category": "external_change",
+    "source_system": "USCIS processing time feed",
+    "day_offset": 10,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 55,
+      "previous_published_processing_days": 38,
+      "updated_published_processing_days": 52,
+      "impact": "Buffer collapses from 27 days to 13 days.",
+      "new_buffer_days": 13,
+      "test_note": "TC-001: Event 2 of 4. Concerning but single signal, still recoverable. Agent should assess MEDIUM risk. Intervention should NOT fire here — impact medium, reversibility still manageable."
+    }
+  },
+  {
+    "event_id": "TC001_EV003",
+    "scenario_id": "SCENARIO_TC001",
+    "timestamp_offset_sec": 30,
+    "event_type": "document_request_issued",
+    "event_category": "status_change_on_dependency",
+    "source_system": "Consulate portal webhook",
+    "day_offset": 16,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 49,
+      "document_requested": "employer_support_letter",
+      "requested_by": "US Consulate — London",
+      "submission_deadline_days": 10,
+      "submission_deadline_date": "2026-07-23",
+      "processing_status": "suspended_pending_document",
+      "impact": "Processing clock paused. Combined with compressed buffer from event 2, start date now at measurable risk.",
+      "test_note": "TC-001: Event 3 of 4. Two corroborating signals now — timeline compressed AND processing suspended. Impact HIGH, reversibility PARTIAL. Intervention SHOULD fire here."
+    }
+  },
+  {
+    "event_id": "TC001_EV004",
+    "scenario_id": "SCENARIO_TC001",
+    "timestamp_offset_sec": 45,
+    "event_type": "human_decision_recorded",
+    "event_category": "milestone_completed",
+    "source_system": "Signal Canvas",
+    "day_offset": 16,
+    "entity_id": "E001",
+    "payload": {
+      "days_to_start": 49,
+      "decision": "Human reviewed intervention at event 3 and initiated document submission",
+      "outcome": "Document submission initiated. Processing can resume upon receipt.",
+      "test_note": "TC-001: Event 4 of 4. Post-intervention resolution. Agent should assess risk as REDUCED — human acted correctly and the situation is recovering."
+    }
+  },
+  {
+    "event_id": "TC002_EV001",
+    "scenario_id": "SCENARIO_TC002",
+    "timestamp_offset_sec": 0,
+    "event_type": "document_request_issued",
+    "event_category": "status_change_on_dependency",
+    "source_system": "Consulate portal webhook",
+    "day_offset": 16,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 49,
+      "document_requested": "employer_support_letter",
+      "requested_by": "US Consulate — London",
+      "submission_deadline_days": 10,
+      "submission_deadline_date": "2026-07-23",
+      "processing_status": "suspended_pending_document",
+      "impact": "Processing suspended. 10-day window to submit document and resume processing.",
+      "test_note": "TC-002: Event 1 of 4. Agent should issue human_action_required req_001: submit document within 10 days. This ID will be tracked through the test."
+    }
+  },
+  {
+    "event_id": "TC002_EV002",
+    "scenario_id": "SCENARIO_TC002",
+    "timestamp_offset_sec": 15,
+    "event_type": "document_submission_deadline_missed",
+    "event_category": "deadline_miss",
+    "source_system": "Case management SLA tracker",
+    "day_offset": 26,
+    "entity_id": "CASE001",
+    "payload": {
+      "days_to_start": 39,
+      "document": "employer_support_letter",
+      "deadline_date": "2026-07-23",
+      "days_overdue": 0,
+      "processing_status": "suspended",
+      "responsible_party": "HR Business Partner",
+      "escalation_attempted": false,
+      "impact": "10-day submission window elapsed. Processing remains suspended.",
+      "test_note": "TC-002: Event 2 of 4. Deadline passed with no action. Agent should mark req_001 as MISSED and reference it in missed_prior_actions. This is the key assertion."
+    }
+  },
+  {
+    "event_id": "TC002_EV003",
+    "scenario_id": "SCENARIO_TC002",
+    "timestamp_offset_sec": 30,
+    "event_type": "policy_exception_approval_overdue",
+    "event_category": "deadline_miss",
+    "source_system": "Internal approval workflow engine",
+    "day_offset": 28,
+    "entity_id": "E001",
+    "payload": {
+      "days_to_start": 37,
+      "policy_id": "P_US_UK_01",
+      "workflow_initiated_day": 0,
+      "sla_days": 28,
+      "days_elapsed": 28,
+      "approval_status": "pending",
+      "approver": "VP Engineering",
+      "escalation_triggered": false,
+      "impact": "Second unresolved blocker. Assignment technically unauthorized. Payroll setup cannot proceed.",
+      "test_note": "TC-002: Event 3 of 4. Second missed action accumulating. Agent should issue new human_action_required req_002 for VP escalation. Both req_001 and req_002 should be in register as missed/active respectively."
+    }
+  },
+  {
+    "event_id": "TC002_EV004",
+    "scenario_id": "SCENARIO_TC002",
+    "timestamp_offset_sec": 45,
+    "event_type": "payroll_setup_blocked",
+    "event_category": "downstream_cascade",
+    "source_system": "Payroll operations system",
+    "day_offset": 35,
+    "entity_id": "E001",
+    "payload": {
+      "days_to_start": 30,
+      "attempted_action": "initiate_host_payroll_setup",
+      "blocked_by": "policy_exception_approval_pending",
+      "system_rule": "Host payroll setup requires confirmed VP exception approval.",
+      "host_payroll_status": "blocked",
+      "days_required_for_setup": 14,
+      "impact": "Payroll cannot start. Cascade from unresolved policy approval.",
+      "cascade_from": "TC002_EV003",
+      "test_note": "TC-002: Event 4 of 4. Downstream cascade confirms prior inaction had consequences. Agent should reference both missed req_001 and the cascade from req_002 non-resolution. missed_prior_actions should contain req_001. supersedes or new req for payroll cascade."
+    }
+  }
+]

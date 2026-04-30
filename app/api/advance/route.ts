@@ -12,9 +12,12 @@ import {
   recordPendingIntervention,
   getState,
   updateActionRegister,
+  updateAssertionResults,
   getRegisterAtEventIndex,
   getActionRegister,
 } from "@/lib/state";
+import { evaluateAssertions } from "@/lib/configs/test-suite-config";
+import type { AssertionResult } from "@/types";
 import type {
   EvaluatorOutput,
   EvaluationRecord,
@@ -468,6 +471,16 @@ Using the baseline profile above and the available tools, investigate the impact
     domainConfig.interventionThresholds
   );
 
+  // Helper: compute assertion results for test case scenarios
+  function computeAssertionResults(
+    evaluationsMap: Record<number, Record<string, unknown>>
+  ): AssertionResult[] | undefined {
+    if (!domainConfig.isTestCase || !domainConfig.assertions) return undefined;
+    const results = evaluateAssertions(domainConfig.assertions, evaluationsMap);
+    updateAssertionResults(scenarioId, results);
+    return results;
+  }
+
   if (requiresIntervention) {
     // Paused path: save as pending, do NOT advance event index
     const record: EvaluationRecord = {
@@ -487,8 +500,14 @@ Using the baseline profile above and the available tools, investigate the impact
       evaluation: finalEvaluation,
     };
 
-    recordPendingIntervention(scenarioId, totalEvents, record, pending);
+    const pendingState = recordPendingIntervention(scenarioId, totalEvents, record, pending);
     updateActionRegister(scenarioId, finalEvaluation, eventIndex, eventDate);
+
+    const evalMap: Record<number, Record<string, unknown>> = {};
+    for (const r of pendingState.evaluations) {
+      evalMap[r.event_index] = r.evaluation as unknown as Record<string, unknown>;
+    }
+    const assertionResults = computeAssertionResults(evalMap);
 
     return NextResponse.json({
       requires_intervention: true,
@@ -497,6 +516,7 @@ Using the baseline profile above and the available tools, investigate the impact
       tool_trace: toolCallTrace,
       intervention_options: domainConfig.interventionOptions,
       action_register: getRegisterAtEventIndex(scenarioId, eventIndex),
+      assertion_results: assertionResults,
       progress: {
         current_event_index: eventIndex,
         next_event_index: eventIndex,
@@ -521,12 +541,19 @@ Using the baseline profile above and the available tools, investigate the impact
   const updatedState = recordEvaluation(scenarioId, totalEvents, record);
   updateActionRegister(scenarioId, finalEvaluation, eventIndex, eventDate);
 
+  const evalMap: Record<number, Record<string, unknown>> = {};
+  for (const r of updatedState.evaluations) {
+    evalMap[r.event_index] = r.evaluation as unknown as Record<string, unknown>;
+  }
+  const assertionResults = computeAssertionResults(evalMap);
+
   return NextResponse.json({
     requires_intervention: false,
     event,
     evaluation: finalEvaluation,
     tool_trace: toolCallTrace,
     action_register: getRegisterAtEventIndex(scenarioId, eventIndex),
+    assertion_results: assertionResults,
     progress: {
       current_event_index: eventIndex,
       next_event_index: updatedState.currentEventIndex,

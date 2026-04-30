@@ -153,6 +153,31 @@ export interface PendingIntervention {
   evaluation: EvaluatorOutput;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Behavioral test suite types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AssertionDefinition {
+  id: string;
+  label: string;
+  event_index: number;
+  field: string;
+  operator: "equals" | "not_equals" | "greater_than" | "less_than" | "length_greater_than" | "length_equals" | "includes";
+  expected: unknown;
+  type: "positive" | "negative" | "threshold";
+  explanation: string;
+}
+
+export interface AssertionResult {
+  id: string;
+  label: string;
+  status: "pass" | "fail" | "pending";
+  expected: unknown;
+  actual: unknown;
+  explanation: string;
+  type: "positive" | "negative" | "threshold";
+}
+
 export interface PrimaryEntity {
   name: string;
   subtitle: string;
@@ -180,4 +205,5 @@ export interface StateApiResponse {
   current_path: string;
   pending_intervention: PendingIntervention | null;
   action_register: ActionRegisterEntry[];
+  assertion_results?: AssertionResult[];
 }

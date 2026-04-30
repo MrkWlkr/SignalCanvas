@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getState, initState } from "@/lib/state";
+import { getState, initState, getAssertionResults } from "@/lib/state";
 import { loadSignalEventsFromPath } from "@/lib/data";
 import { getConfigForScenario } from "@/lib/config-registry";
 
@@ -41,5 +41,6 @@ export async function GET(request: NextRequest) {
     current_path: state.currentPath,
     pending_intervention: state.pendingIntervention,
     action_register: state.actionRegister,
+    assertion_results: getAssertionResults(scenarioId),
   });
 }
