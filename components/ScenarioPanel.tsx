@@ -5,8 +5,7 @@ import { formatEventType, getRiskColors, riskBorderHex } from "@/components/ui";
 import ActionRegister from "@/components/ActionRegister";
 
 const MOBILITY_SCENARIOS = [
-  { id: "SCENARIO_ESCALATING", label: "Escalating", descriptor: "Steady risk build-up across domains" },
-  { id: "SCENARIO_CRITICAL",   label: "Critical",   descriptor: "Rapid escalation to assignment blocker" },
+  { id: "SCENARIO_ESCALATING", label: "Alex Carter", descriptor: "Assignment risk escalation" },
 ];
 
 const OPS_SCENARIOS = [

@@ -208,9 +208,6 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
       default: "data/mobility/signal_events.json",
       intervention_resolved: "data/mobility/signal_events_path_a.json",
     },
-    SCENARIO_CRITICAL: {
-      default: "data/mobility/signal_events.json",
-    },
     SCENARIO_HEALTHY: {
       default: "data/mobility/signal_events.json",
     },
@@ -249,7 +246,6 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
     granularity: "day",
     monitoringStartDates: {
       SCENARIO_ESCALATING: "2026-06-27",
-      SCENARIO_CRITICAL:   "2026-06-20",
       SCENARIO_HEALTHY:    "2026-07-03",
     },
     deadlineLabel: "Days until assignment start",

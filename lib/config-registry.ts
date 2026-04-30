@@ -4,7 +4,6 @@ import { opsConfig } from "@/lib/configs/ops-config";
 
 export const configRegistry: Record<string, DomainConfig> = {
   SCENARIO_ESCALATING:     mobilityConfig,
-  SCENARIO_CRITICAL:       mobilityConfig,
   SCENARIO_HEALTHY:        mobilityConfig,
   SCENARIO_DEALER_PRICING: opsConfig,
 };
