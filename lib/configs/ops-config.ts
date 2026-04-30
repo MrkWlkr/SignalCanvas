@@ -12,6 +12,7 @@
 import { DomainConfig } from '../domain-config'
 
 export const opsConfig: DomainConfig = {
+  id: "ops",
   domainName: "Operational Intelligence",
   scenarioLabel: "Platform issue triage — dealer pricing anomaly",
 

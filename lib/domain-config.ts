@@ -54,6 +54,7 @@ export interface TimelineConfig {
 }
 
 export interface DomainConfig {
+  id: string;
   domainName: string;
   scenarioLabel: string;
   systemPrompt: string;
@@ -71,6 +72,7 @@ export interface DomainConfig {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const mobilityConfig: DomainConfig = {
+  id: "mobility",
   domainName: "Global Mobility",
   scenarioLabel: "Employee assignment risk escalation",
 

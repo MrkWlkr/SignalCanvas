@@ -31,6 +31,7 @@ export interface SignalEvent {
   event_category?: string;
   source_system?: string;
   day_offset?: number;
+  minute_offset?: number;
   entity_id: string;
   acted_on?: boolean;
   unactioned_recommendation_indices?: number[];
@@ -90,6 +91,7 @@ export interface ActionRegisterEntry {
 export interface EvaluatorOutput {
   risk_level: RiskLevel;
   confidence: number;
+  health_score?: number;
   affected_domains: string[];
   /** @deprecated use agent_actions_taken, surfaced_for_awareness, human_actions_required */
   recommended_actions?: string[];
@@ -151,12 +153,20 @@ export interface PendingIntervention {
   evaluation: EvaluatorOutput;
 }
 
+export interface PrimaryEntity {
+  name: string;
+  subtitle: string;
+  tags: string[];
+  meta: { label: string; value: string }[];
+}
+
 export interface ScenarioApiResponse {
   scenario: ScenarioMeta;
   events: SignalEvent[];
-  employee: Employee;
-  visa_case: unknown;
-  payroll_status: unknown;
+  employee?: Employee;
+  visa_case?: unknown;
+  payroll_status?: unknown;
+  primary_entity?: PrimaryEntity;
 }
 
 export interface StateApiResponse {

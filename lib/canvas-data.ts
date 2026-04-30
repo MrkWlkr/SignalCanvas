@@ -295,9 +295,10 @@ export function buildSpineNodes(
     const hasIntervention = record.human_decision !== undefined;
     const isRegisterHighlighted = record.event_index === registerHighlightIndex;
 
+    const rawOffset = event?.day_offset ?? event?.minute_offset ?? null;
     const formattedDate =
-      monitoringStart && event?.day_offset != null
-        ? formatEventDate(monitoringStart, event.day_offset, config.timeline.granularity)
+      monitoringStart && rawOffset != null
+        ? formatEventDate(monitoringStart, rawOffset, config.timeline.granularity)
         : null;
 
     return {

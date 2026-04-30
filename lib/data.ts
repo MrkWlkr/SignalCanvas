@@ -72,6 +72,7 @@ export interface SignalEvent {
   event_category?: string;
   source_system?: string;
   day_offset?: number;
+  minute_offset?: number;
   entity_id: string;
   acted_on?: boolean;
   unactioned_recommendation_indices?: number[];

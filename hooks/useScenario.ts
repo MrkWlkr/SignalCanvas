@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput, ActionRegisterEntry } from "@/types";
-import type { InterventionOption } from "@/lib/domain-config";
+import type { InterventionOption, DomainConfig } from "@/lib/domain-config";
+import { getConfigForScenario } from "@/lib/config-registry";
 
 export interface PendingInterventionState {
   evaluation: EvaluatorOutput;
@@ -20,6 +21,10 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     useState<PendingInterventionState | null>(null);
   const [currentPath, setCurrentPath] = useState("default");
   const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
+  const activeDomainConfig: DomainConfig = useMemo(
+    () => getConfigForScenario(scenarioId),
+    [scenarioId]
+  );
 
   const playingRef = useRef(false);
   const playTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -276,5 +281,6 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     actionRegister,
     selectEvent,
     highlightCanvasNode,
+    activeDomainConfig,
   };
 }

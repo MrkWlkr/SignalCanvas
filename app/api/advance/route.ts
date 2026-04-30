@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { domainConfig } from "@/lib/domain-config";
+import { getConfigForScenario } from "@/lib/config-registry";
 import { getBaselineContext } from "@/lib/server/baseline-context";
+import { getOpsBaselineContext } from "@/lib/server/baseline-context-ops";
 import type { InterventionThresholds, InterventionRule } from "@/lib/domain-config";
 import { TOOL_DEFINITIONS, executeTool, getRecentSignals } from "@/lib/tools";
+import { TOOL_DEFINITIONS_OPS, executeToolOps } from "@/lib/tools-ops";
 import { loadSignalEventsFromPath } from "@/lib/data";
 import {
   recordEvaluation,
@@ -171,6 +173,7 @@ function normalizeEvaluatorOutput(raw: Record<string, unknown>): EvaluatorOutput
   return {
     risk_level: (raw.risk_level as EvaluatorOutput["risk_level"]) ?? "medium",
     confidence: (raw.confidence as number) ?? 0.5,
+    health_score: raw.health_score !== undefined ? (raw.health_score as number) : undefined,
     affected_domains: Array.isArray(raw.affected_domains) ? (raw.affected_domains as string[]) : [],
     recommended_actions: [],
     reasoning_summary: (raw.reasoning_summary as string) ?? "",
@@ -242,6 +245,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "scenarioId is required" }, { status: 400 });
   }
 
+  const domainConfig = getConfigForScenario(scenarioId);
   const currentState = getState(scenarioId);
 
   // Guard: refuse to advance while an intervention is pending
@@ -300,12 +304,14 @@ export async function POST(request: NextRequest) {
     new Date().toISOString().split("T")[0];
   const eventDate = formatEventDate(
     monitoringStartDate,
-    event.day_offset ?? 0,
+    event.day_offset ?? event.minute_offset ?? 0,
     domainConfig.timeline.granularity
   ).primary;
 
-  // Fetch baseline context via domain config — no mobility-specific calls in this route
-  const baselineData = await getBaselineContext(scenarioId);
+  // Fetch baseline context — routed by domain
+  const baselineData = domainConfig.id === "ops"
+    ? await getOpsBaselineContext()
+    : await getBaselineContext(scenarioId);
   const baselineContext = Object.keys(baselineData).length > 0
     ? `BASELINE CONTEXT (pre-fetched — do not re-fetch unless investigating a specific change):\n${JSON.stringify(baselineData, null, 2)}`
     : "";
@@ -385,7 +391,7 @@ Using the baseline profile above and the available tools, investigate the impact
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: domainConfig.systemPrompt,
-      tools: TOOL_DEFINITIONS as unknown as Anthropic.Tool[],
+      tools: (domainConfig.id === "ops" ? TOOL_DEFINITIONS_OPS : TOOL_DEFINITIONS) as unknown as Anthropic.Tool[],
       messages,
     });
 
@@ -424,11 +430,9 @@ Using the baseline profile above and the available tools, investigate the impact
 
       let toolResult: unknown;
       if (toolUse.name === "get_recent_signals") {
-        toolResult = getRecentSignals(
-          toolInput.scenario_id as string,
-          eventIndex,
-          eventsFilePath
-        );
+        toolResult = getRecentSignals(toolInput.scenario_id as string, eventIndex, eventsFilePath);
+      } else if (domainConfig.id === "ops") {
+        toolResult = executeToolOps(toolUse.name, toolInput);
       } else {
         toolResult = executeTool(toolUse.name, toolInput);
       }
