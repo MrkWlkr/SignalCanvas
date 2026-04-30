@@ -1,0 +1,328 @@
+[
+  {
+    "event_id": "OPS001",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "timestamp_offset_sec": 0,
+    "event_type": "support_ticket_escalated",
+    "event_category": "intake",
+    "source_system": "Jira",
+    "minute_offset": 0,
+    "entity_id": "SVC001",
+    "payload": {
+      "ticket_id": "PLAT-8841",
+      "reporter": "Support Engineer — Southeast Region",
+      "affected_dealer": "Southeast Ford Group (47 locations)",
+      "issue_summary": "Vehicle price stack fields showing incorrect values on high-value SUV inventory. Market adjustment and final price fields appear to be calculated incorrectly — showing values 15-40% below expected.",
+      "support_actions_attempted": [
+        "Cache refresh for affected dealer accounts — no change",
+        "Manual data sync trigger — no change",
+        "Checked dealer portal configuration — no issues found"
+      ],
+      "issue_duration_minutes": 240,
+      "first_reported": "2026-07-15T09:00:00Z",
+      "escalated_at": "2026-07-15T13:00:00Z",
+      "priority": "P2",
+      "slack_thread": "#dealer-support thread opened",
+      "notes": "Support has exhausted standard troubleshooting. Escalating to platform team for investigation."
+    }
+  },
+  {
+    "event_id": "OPS002",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "timestamp_offset_sec": 15,
+    "event_type": "prior_incident_found",
+    "event_category": "status_change_on_dependency",
+    "source_system": "Slack",
+    "minute_offset": 8,
+    "entity_id": "SVC002",
+    "payload": {
+      "minutes_elapsed": 8,
+      "channels_searched": ["#dealer-support", "#incidents", "#integration"],
+      "search_query": "price stack incorrect field values dealer",
+      "prior_incidents_found": 2,
+      "most_relevant_incident": {
+        "date": "2026-06-03",
+        "channel": "#incidents",
+        "summary": "Similar price field anomaly reported by Midwest dealer group. Root cause: field mapping logic error in price-stack-service deployment. Resolved by reverting field mapper config and flushing price cache. Resolution time: 47 minutes.",
+        "resolved_by": "platform-eng-lead",
+        "resolution_steps": [
+          "Identified bad deployment via GHE deploy log correlation",
+          "Rolled back price-stack-mapper config",
+          "Flushed price cache for affected accounts",
+          "Verified field accuracy restored"
+        ]
+      },
+      "second_incident": {
+        "date": "2026-02-18",
+        "channel": "#dealer-support",
+        "summary": "Price stack MSRP field showing stale values. Root cause: caching issue, not a deployment. Resolved by cache flush alone.",
+        "resolved_by": "support-eng-02"
+      },
+      "pattern_match": "HIGH — June incident shares same symptom profile and same service. Deploy correlation likely.",
+      "notes": "Prior incident strongly suggests checking recent price-stack-service deployments. June incident resolved without full rollback."
+    }
+  },
+  {
+    "event_id": "OPS003",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "timestamp_offset_sec": 30,
+    "event_type": "deployment_correlated",
+    "event_category": "external_change",
+    "source_system": "GitHub Enterprise",
+    "minute_offset": 14,
+    "entity_id": "SVC002",
+    "payload": {
+      "minutes_elapsed": 14,
+      "deploys_in_window": 3,
+      "most_recent_deploy": {
+        "deploy_id": "DEP001",
+        "service": "price-stack-service",
+        "pr_number": "PR-4471",
+        "pr_title": "Refactor price stack field mapping — consolidate MSRP and market adjustment logic",
+        "deployed_at": "2026-07-15T08:47:00Z",
+        "minutes_before_issue_onset": 73,
+        "author": "platform-eng-02",
+        "files_changed": [
+          "src/mapping/price-stack-mapper.ts",
+          "src/validation/field-validators.ts",
+          "src/config/price-field-config.json"
+        ],
+        "change_summary": "Consolidated price stack field mapping. Changed calculation logic for market_adjustment and final_price fields."
+      },
+      "timing_correlation": "STRONG — deploy 73 minutes before issue onset. price-stack-mapper.ts directly maps the affected fields.",
+      "other_deploys_reviewed": [
+        "DEP002: vehicle-inventory-api pagination — 20 hours prior, no price logic",
+        "DEP003: field-validation VIN rules — 4 days prior, no price logic"
+      ],
+      "hypothesis": "PR-4471 changed price stack field mapping logic. The refactored calculation likely introduced an offset error for high-value vehicles.",
+      "notes": "Author platform-eng-02 is available — merged during business hours today."
+    }
+  },
+  {
+    "event_id": "OPS004",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "timestamp_offset_sec": 45,
+    "event_type": "root_cause_confirmed",
+    "event_category": "threshold_breach",
+    "source_system": "Splunk",
+    "minute_offset": 22,
+    "entity_id": "SVC002",
+    "payload": {
+      "minutes_elapsed": 22,
+      "query": "index=platform service=price-stack-service sourcetype=app_logs level=DEBUG price_stack_mapper since=08:00",
+      "findings": {
+        "error_count": 0,
+        "warning_count": 0,
+        "silent_failure_detected": true,
+        "silent_failure_description": "price-stack-mapper.ts computing final_price as: MSRP - market_adjustment (correct). But for vehicles where MSRP > 45000, a new offset constant introduced in PR-4471 is being applied incorrectly — subtracting an additional $8,400-$12,600 from final_price depending on trim level.",
+        "affected_condition": "MSRP > $45,000 AND trim_level IN (Limited, Platinum, King Ranch, Raptor)",
+        "sample_corrupted_record": {
+          "vin": "1FTFW1ET5NFA12345",
+          "vehicle": "2024 Ford F-150 Raptor",
+          "msrp": 72450,
+          "correct_final_price": 68200,
+          "actual_final_price": 57640,
+          "variance": -10560,
+          "variance_pct": -15.5
+        },
+        "records_affected_estimate": 3847,
+        "validation_status": "PASSING — field-validation-service accepts these values as numerically valid"
+      },
+      "fix_options": {
+        "option_a": {
+          "label": "Targeted patch",
+          "description": "Fix the offset calculation in price-stack-mapper.ts. Estimated 20 minutes to implement, test, and deploy.",
+          "risk": "LOW — surgical change to the specific calculation error",
+          "preserves_other_pr_changes": true,
+          "data_repair_needed": true,
+          "data_repair_description": "Re-process the 3,847 affected records after patch deploys"
+        },
+        "option_b": {
+          "label": "Full rollback of PR-4471",
+          "description": "Revert price-stack-service to pre-PR-4471 version.",
+          "risk": "MEDIUM — also reverts two unrelated bug fixes in the same PR",
+          "preserves_other_pr_changes": false,
+          "data_repair_needed": true,
+          "data_repair_description": "Re-process all records written since 08:47 today"
+        },
+        "option_c": {
+          "label": "Field override",
+          "description": "Manually override price_stack fields for affected dealers while fix is prepared.",
+          "risk": "HIGH — manual intervention at scale, high error risk",
+          "preserves_other_pr_changes": true,
+          "data_repair_needed": false
+        }
+      },
+      "notes": "Root cause confirmed. Silent failure — no exceptions thrown because offset values are numerically valid. Standard error monitoring would not catch this."
+    }
+  },
+  {
+    "event_id": "OPS005",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "timestamp_offset_sec": 60,
+    "event_type": "blast_radius_confirmed",
+    "event_category": "threshold_breach",
+    "source_system": "New Relic",
+    "minute_offset": 31,
+    "entity_id": "SVC001",
+    "payload": {
+      "minutes_elapsed": 31,
+      "affected_dealers": 47,
+      "affected_vehicle_records": 3847,
+      "affected_trim_levels": ["Limited", "Platinum", "King Ranch", "Raptor"],
+      "affected_makes": ["Ford", "Lincoln"],
+      "price_variance_range": {
+        "min_dollars": 8400,
+        "max_dollars": 12600,
+        "average_dollars": 10420
+      },
+      "unaffected_segments": [
+        "Vehicles with MSRP under $45,000 — unaffected",
+        "All other trim levels — unaffected",
+        "Non-Ford/Lincoln inventory — unaffected"
+      ],
+      "api_performance": "HEALTHY — response times normal, no latency impact",
+      "queue_status": {
+        "price_stack_update_queue_depth": 2847,
+        "normal_baseline": 50,
+        "dlq_depth": 0,
+        "note": "Queue elevated due to volume of updates triggered by corrupted records. No DLQ accumulation."
+      },
+      "sla_status": {
+        "price_field_accuracy": "BREACHED — 61.3% vs 99.5% threshold",
+        "api_response_time": "HEALTHY",
+        "dealer_complaint_rate": "BREACHED — 12/hr vs 2/hr threshold"
+      },
+      "estimated_revenue_impact": "47 dealers potentially underpricing high-value inventory. If any transactions completed at incorrect prices, financial reconciliation required.",
+      "notes": "Blast radius is contained to high-value trim levels. 89% of dealer inventory is unaffected. Issue is isolated and fixable."
+    }
+  },
+  {
+    "event_id": "OPS006_A",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "path": "intervention_resolved",
+    "timestamp_offset_sec": 75,
+    "event_type": "targeted_patch_deployed",
+    "event_category": "milestone_completed",
+    "source_system": "GitHub Enterprise",
+    "minute_offset": 52,
+    "entity_id": "SVC002",
+    "payload": {
+      "minutes_elapsed": 52,
+      "fix_type": "targeted_patch",
+      "pr_number": "PR-4475",
+      "pr_title": "Fix price stack offset calculation for high-value trim levels",
+      "deployed_at": "2026-07-15T13:52:00Z",
+      "deploy_duration_minutes": 4,
+      "patch_description": "Corrected offset constant application in price-stack-mapper.ts. Offset now only applied for fleet pricing context, not retail context.",
+      "other_pr_changes_preserved": true,
+      "post_deploy_validation": "PASSED — sample records re-processed show correct final_price values",
+      "impact": "Price stack field mapping restored to correct values for all affected trim levels."
+    }
+  },
+  {
+    "event_id": "OPS007_A",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "path": "intervention_resolved",
+    "timestamp_offset_sec": 90,
+    "event_type": "data_repair_completed",
+    "event_category": "milestone_completed",
+    "source_system": "Splunk",
+    "minute_offset": 67,
+    "entity_id": "SVC001",
+    "payload": {
+      "minutes_elapsed": 67,
+      "records_reprocessed": 3847,
+      "reprocess_duration_minutes": 14,
+      "validation_result": "PASSED — all reprocessed records show correct price stack values",
+      "price_field_accuracy": 99.97,
+      "sla_status": "RESTORED",
+      "dealer_complaint_rate": 0.3,
+      "queue_depth_normalized": true,
+      "affected_dealers_restored": 47,
+      "intervention_impact": "Targeted patch approach preserved 2 unrelated bug fixes from PR-4471. Full rollback was not required.",
+      "notes": "Issue fully resolved. Total time from escalation to resolution: 67 minutes. Prior incident resolution time was 47 minutes — comparable."
+    }
+  },
+  {
+    "event_id": "OPS008_A",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "path": "intervention_resolved",
+    "timestamp_offset_sec": 105,
+    "event_type": "incident_closed",
+    "event_category": "milestone_completed",
+    "source_system": "Jira",
+    "minute_offset": 74,
+    "entity_id": "SVC001",
+    "payload": {
+      "minutes_elapsed": 74,
+      "ticket_id": "PLAT-8841",
+      "resolution_status": "RESOLVED",
+      "root_cause": "Incorrect offset constant application in price-stack-mapper.ts introduced in PR-4471",
+      "resolution_method": "Targeted patch — PR-4475",
+      "dealers_notified": true,
+      "post_mortem_scheduled": true,
+      "post_mortem_date": "2026-07-17",
+      "preventive_actions_identified": [
+        "Add integration test for price stack calculation across all trim levels",
+        "Add business logic validation to field-validation-service for price reasonableness",
+        "Add price variance monitoring alert to detect silent failures"
+      ],
+      "intervention_impact": "Human decision to pursue targeted patch over rollback preserved 2 unrelated bug fixes and reduced data repair scope.",
+      "notes": "Incident closed. Resolution documentation added to #incidents channel."
+    }
+  },
+  {
+    "event_id": "OPS006_B",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "path": "default",
+    "timestamp_offset_sec": 75,
+    "event_type": "issue_escalated_to_p1",
+    "event_category": "threshold_breach",
+    "source_system": "Jira",
+    "minute_offset": 55,
+    "entity_id": "SVC001",
+    "payload": {
+      "minutes_elapsed": 55,
+      "previous_priority": "P2",
+      "new_priority": "P1",
+      "escalation_trigger": "No resolution action taken within 30 minutes of root cause confirmation. Dealer complaint rate continues to climb.",
+      "dealers_affected_now": 47,
+      "new_dealer_complaints": 8,
+      "total_complaints_since_onset": 31,
+      "potential_transactions_at_incorrect_price": 12,
+      "financial_reconciliation_risk": "ELEVATED — 12 potential transactions at incorrect prices require investigation",
+      "additional_stakeholders_paged": [
+        "Engineering Director",
+        "VP Product",
+        "Customer Success Lead"
+      ],
+      "notes": "Escalation to P1 triggered by inaction. Problem that could have been resolved with a targeted 20-minute patch is now a P1 incident with financial reconciliation risk."
+    }
+  },
+  {
+    "event_id": "OPS007_B",
+    "scenario_id": "SCENARIO_DEALER_PRICING",
+    "path": "default",
+    "timestamp_offset_sec": 90,
+    "event_type": "emergency_rollback_required",
+    "event_category": "downstream_cascade",
+    "source_system": "GitHub Enterprise",
+    "minute_offset": 71,
+    "entity_id": "SVC002",
+    "payload": {
+      "minutes_elapsed": 71,
+      "rollback_type": "full_rollback",
+      "pr_being_reverted": "PR-4471",
+      "unrelated_fixes_lost": [
+        "Fix for edge case in fleet pricing calculation",
+        "Performance improvement for bulk price updates"
+      ],
+      "rollback_duration_minutes": 6,
+      "data_repair_scope": "ALL records written since 08:47 — estimated 18,000+ records",
+      "data_repair_duration_estimate_minutes": 45,
+      "cascade_from": "OPS005 blast radius ignored, OPS004 fix options not acted upon",
+      "notes": "Full rollback required due to inaction. More disruptive than the targeted patch that was available 40 minutes ago. Financial reconciliation investigation now required."
+    }
+  }
+]

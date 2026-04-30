@@ -1,0 +1,152 @@
+[
+  {
+    "employee_id": "E001",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "medium",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-05-15",
+    "days_on_assignment": 0,
+    "notes": "Home payroll active. Host not started — needs initiation before day 60. Currently within acceptable window."
+  },
+  {
+    "employee_id": "E002",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "high",
+    "shadow_payroll_required": true,
+    "last_reviewed": "2026-06-01",
+    "days_on_assignment": 0,
+    "notes": "No SSA between IN and US. Shadow payroll mandatory. Not initiated — critical action needed before assignment starts."
+  },
+  {
+    "employee_id": "E003",
+    "home_payroll_status": "active",
+    "host_payroll_status": "in_progress",
+    "alignment_risk": "low",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-07-15",
+    "days_on_assignment": 0,
+    "notes": "Host payroll setup underway. On track. Low risk route."
+  },
+  {
+    "employee_id": "E004",
+    "home_payroll_status": "active",
+    "host_payroll_status": "ready",
+    "alignment_risk": "low",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-06-20",
+    "days_on_assignment": 0,
+    "notes": "Both payrolls aligned and ready. Clean."
+  },
+  {
+    "employee_id": "E005",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "critical",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-05-20",
+    "days_on_assignment": 0,
+    "notes": "CRITICAL: Assignment start only 14 days away. Host payroll not started. Payroll team not yet engaged."
+  },
+  {
+    "employee_id": "E006",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "high",
+    "shadow_payroll_required": true,
+    "last_reviewed": "2026-07-10",
+    "days_on_assignment": 0,
+    "notes": "Shadow payroll required — no SSA. Policy P_UK_AE_01 requires review above 30 days. Review threshold approaching."
+  },
+  {
+    "employee_id": "E007",
+    "home_payroll_status": "active",
+    "host_payroll_status": "ready",
+    "alignment_risk": "low",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-07-10",
+    "days_on_assignment": 0,
+    "notes": "TN route. Payroll aligned. Low compliance overhead."
+  },
+  {
+    "employee_id": "E008",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "medium",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-06-10",
+    "days_on_assignment": 0,
+    "notes": "Host payroll not started. 21 days to start. Needs to be initiated this week to avoid misalignment."
+  },
+  {
+    "employee_id": "E009",
+    "home_payroll_status": "active",
+    "host_payroll_status": "ready",
+    "alignment_risk": "low",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-08-01",
+    "days_on_assignment": 0,
+    "notes": "All payroll checks complete. Ready."
+  },
+  {
+    "employee_id": "E010",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "critical",
+    "shadow_payroll_required": true,
+    "last_reviewed": "2026-05-25",
+    "days_on_assignment": 0,
+    "notes": "CRITICAL: No SSA, no treaty. Shadow payroll required from day 30 per policy P_US_CN_01. Not initiated. Assignment start 18 days away."
+  },
+  {
+    "employee_id": "E011",
+    "home_payroll_status": "active",
+    "host_payroll_status": "in_progress",
+    "alignment_risk": "low",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-07-20",
+    "days_on_assignment": 0,
+    "notes": "German payroll setup in progress. On track for start date."
+  },
+  {
+    "employee_id": "E012",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "high",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-05-28",
+    "days_on_assignment": 0,
+    "notes": "130-day assignment exceeds 90-day policy threshold. Tax implications not yet reviewed. Host payroll not started."
+  },
+  {
+    "employee_id": "E013",
+    "home_payroll_status": "active",
+    "host_payroll_status": "ready",
+    "alignment_risk": "low",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-08-01",
+    "days_on_assignment": 0,
+    "notes": "Clean. 70-day assignment within policy. Payroll ready."
+  },
+  {
+    "employee_id": "E014",
+    "home_payroll_status": "active",
+    "host_payroll_status": "in_progress",
+    "alignment_risk": "medium",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-06-20",
+    "days_on_assignment": 0,
+    "notes": "EP salary threshold under review. Payroll setup depends on MOM confirmation."
+  },
+  {
+    "employee_id": "E015",
+    "home_payroll_status": "active",
+    "host_payroll_status": "not_started",
+    "alignment_risk": "critical",
+    "shadow_payroll_required": false,
+    "last_reviewed": "2026-06-10",
+    "days_on_assignment": 0,
+    "notes": "CRITICAL: 115-day assignment near tax threshold. Host payroll not started. Security clearance delays may push assignment start — but payroll timeline unchanged."
+  }
+]

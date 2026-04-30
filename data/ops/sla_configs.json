@@ -1,0 +1,62 @@
+[
+  {
+    "sla_id": "SLA001",
+    "service_id": "SVC001",
+    "service_name": "vehicle-inventory-api",
+    "metric": "price_field_accuracy",
+    "threshold": 99.5,
+    "unit": "percent_correct",
+    "measurement_window_minutes": 60,
+    "current_value": 61.3,
+    "breach_status": "breached",
+    "breach_detected_at": "2026-07-15T10:45:00Z",
+    "minutes_since_breach": 135,
+    "escalation_policy": "P1 incident if breach exceeds 30 minutes — auto-page platform team lead",
+    "notes": "Price field accuracy SLA has been breached for 135 minutes. Affects all vehicle records with MSRP above $45,000."
+  },
+  {
+    "sla_id": "SLA002",
+    "service_id": "SVC001",
+    "service_name": "vehicle-inventory-api",
+    "metric": "api_response_time_p95",
+    "threshold": 200,
+    "unit": "milliseconds",
+    "measurement_window_minutes": 5,
+    "current_value": 143,
+    "breach_status": "healthy",
+    "breach_detected_at": null,
+    "minutes_since_breach": 0,
+    "escalation_policy": "P2 alert if breach exceeds 10 minutes",
+    "notes": "API performance is healthy. Issue is data quality not performance — this is why standard performance monitoring did not catch it."
+  },
+  {
+    "sla_id": "SLA003",
+    "service_id": "SVC002",
+    "service_name": "price-stack-service",
+    "metric": "field_write_success_rate",
+    "threshold": 99.9,
+    "unit": "percent_successful",
+    "measurement_window_minutes": 5,
+    "current_value": 99.97,
+    "breach_status": "healthy",
+    "breach_detected_at": null,
+    "minutes_since_breach": 0,
+    "escalation_policy": "P1 alert if breach exceeds 5 minutes",
+    "notes": "Write success rate is healthy — fields are being written successfully. They are just being written with incorrect values. This is the detection gap."
+  },
+  {
+    "sla_id": "SLA004",
+    "service_id": "SVC001",
+    "service_name": "vehicle-inventory-api",
+    "metric": "dealer_complaint_rate",
+    "threshold": 2,
+    "unit": "complaints_per_hour",
+    "measurement_window_minutes": 60,
+    "current_value": 12,
+    "breach_status": "breached",
+    "breach_detected_at": "2026-07-15T10:15:00Z",
+    "minutes_since_breach": 165,
+    "escalation_policy": "Auto-create Jira ticket and notify #dealer-support if rate exceeds threshold",
+    "notes": "Dealer complaint rate is 6x normal. This is what triggered the initial Jira ticket."
+  }
+]

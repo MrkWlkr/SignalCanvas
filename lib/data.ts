@@ -90,25 +90,25 @@ export function loadSignalEventsFromPath(relativePath: string): SignalEvent[] {
 }
 
 export function loadEmployees(): Employee[] {
-  return loadJson<Employee[]>("data/employees.json");
+  return loadJson<Employee[]>("data/mobility/employees.json");
 }
 
 export function loadCountryRules(): CountryRule[] {
-  return loadJson<CountryRule[]>("data/country_rules.json");
+  return loadJson<CountryRule[]>("data/mobility/country_rules.json");
 }
 
 export function loadPolicyRules(): PolicyRule[] {
-  return loadJson<PolicyRule[]>("data/policy_rules.json");
+  return loadJson<PolicyRule[]>("data/mobility/policy_rules.json");
 }
 
 export function loadVisaCases(): VisaCase[] {
-  return loadJson<VisaCase[]>("data/visa_cases.json");
+  return loadJson<VisaCase[]>("data/mobility/visa_cases.json");
 }
 
 export function loadPayrollStatuses(): PayrollStatus[] {
-  return loadJson<PayrollStatus[]>("data/payroll_status.json");
+  return loadJson<PayrollStatus[]>("data/mobility/payroll_status.json");
 }
 
 export function loadSignalEvents(): SignalEvent[] {
-  return loadJson<SignalEvent[]>("data/signal_events.json");
+  return loadJson<SignalEvent[]>("data/mobility/signal_events.json");
 }

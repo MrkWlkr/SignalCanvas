@@ -1,0 +1,66 @@
+[
+  {
+    "resource_id": "INF001",
+    "resource_type": "RDS",
+    "resource_name": "inventory-db-prod",
+    "region": "us-east-1",
+    "status": "healthy",
+    "cpu_utilization": 23,
+    "connection_count": 187,
+    "connection_limit": 500,
+    "read_latency_ms": 4.2,
+    "write_latency_ms": 6.8,
+    "notes": "Database is healthy. Query patterns are normal. The issue is in the application layer writing to it."
+  },
+  {
+    "resource_id": "INF002",
+    "resource_type": "SQS",
+    "resource_name": "price-stack-update-queue",
+    "region": "us-east-1",
+    "status": "elevated",
+    "queue_depth": 2847,
+    "normal_baseline_depth": 50,
+    "oldest_message_age_minutes": 43,
+    "messages_per_minute_in": 312,
+    "messages_per_minute_out": 298,
+    "dlq_depth": 0,
+    "notes": "Queue depth is elevated — 57x normal baseline. Messages are processing but the volume of price stack updates triggered by the corrupted data is causing a backlog. No DLQ messages — writes are succeeding, just slow."
+  },
+  {
+    "resource_id": "INF003",
+    "resource_type": "ECS",
+    "resource_name": "price-stack-service-prod",
+    "region": "us-east-1",
+    "status": "healthy",
+    "running_tasks": 4,
+    "desired_tasks": 4,
+    "cpu_utilization": 41,
+    "memory_utilization": 38,
+    "last_deployment": "2026-07-15T08:47:00Z",
+    "notes": "Service is running normally from an infrastructure perspective. The bug is in the application code, not the infrastructure."
+  },
+  {
+    "resource_id": "INF004",
+    "resource_type": "CloudWatch_Alarm",
+    "resource_name": "price-stack-error-rate-alarm",
+    "region": "us-east-1",
+    "status": "ok",
+    "metric": "ApplicationErrors",
+    "threshold": 10,
+    "current_value": 0.3,
+    "alarm_state": "OK",
+    "notes": "Error rate alarm is in OK state — no application exceptions are being thrown. This is the detection gap: the bug produces wrong values silently."
+  },
+  {
+    "resource_id": "INF005",
+    "resource_type": "Lambda",
+    "resource_name": "price-field-reconciliation-job",
+    "region": "us-east-1",
+    "status": "healthy",
+    "last_execution": "2026-07-15T10:00:00Z",
+    "last_execution_status": "success",
+    "execution_duration_ms": 4230,
+    "error_rate": 0,
+    "notes": "Reconciliation job runs hourly and completed successfully. It validates field format and range but not business logic correctness — it does not catch the offset calculation error."
+  }
+]

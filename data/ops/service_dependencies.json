@@ -1,0 +1,35 @@
+[
+  {
+    "route_id": "PRICE_STACK_TO_INVENTORY_API",
+    "upstream_service": "price-stack-service",
+    "downstream_service": "vehicle-inventory-api",
+    "dependency_type": "data_write",
+    "criticality": "P1",
+    "failure_mode": "Silent data corruption — downstream service receives and serves incorrect values without error",
+    "blast_radius_on_failure": "All dealer accounts consuming vehicle-inventory-api receive incorrect price_stack fields",
+    "detection_difficulty": "HIGH — field-validation-service passes valid but incorrect values. No exceptions. Standard monitoring does not catch this.",
+    "notes": "This is the affected dependency. price-stack-service writing incorrect values flows directly to vehicle-inventory-api."
+  },
+  {
+    "route_id": "INVENTORY_API_TO_DEALER_PORTAL",
+    "upstream_service": "vehicle-inventory-api",
+    "downstream_service": "dealer-portal-api",
+    "dependency_type": "api_call",
+    "criticality": "P1",
+    "failure_mode": "Dealer portal displays whatever vehicle-inventory-api returns",
+    "blast_radius_on_failure": "All dealers using the portal see incorrect prices",
+    "detection_difficulty": "LOW — dealers notice wrong prices immediately",
+    "notes": "Dealers are the detection mechanism here. The anomaly surfaces at the dealer portal level."
+  },
+  {
+    "route_id": "FIELD_VALIDATION_TO_PRICE_STACK",
+    "upstream_service": "field-validation-service",
+    "downstream_service": "price-stack-service",
+    "dependency_type": "validation_gate",
+    "criticality": "P2",
+    "failure_mode": "Validation passes incorrect values because they are numerically valid",
+    "blast_radius_on_failure": "Corrupted values reach the database unchallenged",
+    "detection_difficulty": "HIGH — validation is functioning correctly by its own rules",
+    "notes": "The validation gap: values are wrong in business context but valid in technical context. This is why standard monitoring missed it."
+  }
+]

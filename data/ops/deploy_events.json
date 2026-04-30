@@ -1,0 +1,71 @@
+[
+  {
+    "deploy_id": "DEP001",
+    "service_id": "SVC002",
+    "service_name": "price-stack-service",
+    "repo": "platform/price-stack-service",
+    "pr_number": "PR-4471",
+    "pr_title": "Refactor price stack field mapping — consolidate MSRP and market adjustment logic",
+    "author": "platform-eng-02",
+    "merged_at": "2026-07-15T08:03:00Z",
+    "deployed_at": "2026-07-15T08:47:00Z",
+    "minutes_before_issue": 73,
+    "environment": "production",
+    "files_changed": [
+      "src/mapping/price-stack-mapper.ts",
+      "src/validation/field-validators.ts",
+      "src/config/price-field-config.json"
+    ],
+    "change_summary": "Consolidated price stack field mapping logic. Changed how market_adjustment and final_price fields are calculated from MSRP. Intended to reduce duplicate logic — introduced incorrect offset calculation for vehicle records where MSRP exceeds $45,000.",
+    "rollback_available": true,
+    "rollback_impact": "Reverts intentional consolidation. Two other bug fixes in this PR would also be reverted.",
+    "targeted_fix_available": true,
+    "targeted_fix_description": "Patch the offset calculation in price-stack-mapper.ts. Estimated 20 minutes to implement and deploy.",
+    "notes": "Silent failure — field-validation-service passes these values because they are numerically valid. No exceptions thrown."
+  },
+  {
+    "deploy_id": "DEP002",
+    "service_id": "SVC001",
+    "service_name": "vehicle-inventory-api",
+    "repo": "platform/vehicle-inventory-api",
+    "pr_number": "PR-4468",
+    "pr_title": "Add pagination support for large inventory queries",
+    "author": "platform-eng-01",
+    "merged_at": "2026-07-14T16:22:00Z",
+    "deployed_at": "2026-07-14T17:05:00Z",
+    "minutes_before_issue": 1195,
+    "environment": "production",
+    "files_changed": [
+      "src/routes/inventory.ts",
+      "src/utils/pagination.ts"
+    ],
+    "change_summary": "Added cursor-based pagination for large dealer inventory queries. No pricing logic touched.",
+    "rollback_available": true,
+    "rollback_impact": "Low — reverts pagination feature only.",
+    "targeted_fix_available": false,
+    "targeted_fix_description": null,
+    "notes": "Deployed 20 hours before issue onset. Unlikely to be related — no price stack logic changed."
+  },
+  {
+    "deploy_id": "DEP003",
+    "service_id": "SVC003",
+    "service_name": "field-validation-service",
+    "repo": "platform/field-validation-service",
+    "pr_number": "PR-4459",
+    "pr_title": "Update validation rules for VIN format compliance",
+    "author": "platform-eng-03",
+    "merged_at": "2026-07-11T11:30:00Z",
+    "deployed_at": "2026-07-11T12:15:00Z",
+    "minutes_before_issue": 5565,
+    "environment": "production",
+    "files_changed": [
+      "src/rules/vin-validator.ts"
+    ],
+    "change_summary": "Updated VIN format validation rules. No price field validation logic changed.",
+    "rollback_available": true,
+    "rollback_impact": "Low — reverts VIN validation update only.",
+    "targeted_fix_available": false,
+    "targeted_fix_description": null,
+    "notes": "Deployed 4 days before issue. Not related."
+  }
+]

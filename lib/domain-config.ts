@@ -4,11 +4,10 @@
 // must require zero changes to any API route or component.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EvaluatorOutput } from "@/types";
 
 export interface CanvasConfig {
   kpiLabel: string;
-  kpiField: keyof EvaluatorOutput;
+  kpiField: string;
   kpiRange: [number, number];
   kpiThresholdValue: number;
   kpiThresholdLabel: string;
@@ -62,14 +61,7 @@ export interface DomainConfig {
   interventionThresholds: InterventionThresholds;
   interventionOptions: InterventionOption[];
   scenarioPaths: ScenarioPaths;
-  dataFiles: {
-    employees: string;
-    countryRules: string;
-    policyRules: string;
-    visaCases: string;
-    payrollStatus: string;
-    signalEvents: string;
-  };
+  dataFiles: Record<string, string>;
   canvas: CanvasConfig;
   timeline: TimelineConfig;
 }
@@ -211,21 +203,24 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
 
   scenarioPaths: {
     SCENARIO_ESCALATING: {
-      default: "data/signal_events.json",
-      intervention_resolved: "data/signal_events_path_a.json",
+      default: "data/mobility/signal_events.json",
+      intervention_resolved: "data/mobility/signal_events_path_a.json",
     },
     SCENARIO_CRITICAL: {
-      default: "data/signal_events.json",
+      default: "data/mobility/signal_events.json",
+    },
+    SCENARIO_HEALTHY: {
+      default: "data/mobility/signal_events.json",
     },
   },
 
   dataFiles: {
-    employees: "data/employees.json",
-    countryRules: "data/country_rules.json",
-    policyRules: "data/policy_rules.json",
-    visaCases: "data/visa_cases.json",
-    payrollStatus: "data/payroll_status.json",
-    signalEvents: "data/signal_events.json",
+    employees: "data/mobility/employees.json",
+    countryRules: "data/mobility/country_rules.json",
+    policyRules: "data/mobility/policy_rules.json",
+    visaCases: "data/mobility/visa_cases.json",
+    payrollStatus: "data/mobility/payroll_status.json",
+    signalEvents: "data/mobility/signal_events.json",
   },
 
   canvas: {
