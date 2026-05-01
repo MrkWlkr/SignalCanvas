@@ -7,6 +7,7 @@ interface Props {
   register: ActionRegisterEntry[];
   selectedEventIndex: number | null;
   onEntryClick: (eventIndex: number | null) => void;
+  onToggleAnalytics?: () => void;
 }
 
 const urgencyDot: Record<string, string> = {
@@ -144,7 +145,7 @@ function Section({
   );
 }
 
-export default function ActionRegister({ register, selectedEventIndex, onEntryClick }: Props) {
+export default function ActionRegister({ register, selectedEventIndex, onEntryClick, onToggleAnalytics }: Props) {
   const active     = register.filter((e) => e.status === "active");
   const missed     = register.filter((e) => e.status === "missed");
   const resolved   = register.filter((e) => e.status === "resolved_system" || e.status === "resolved_human");
@@ -156,9 +157,16 @@ export default function ActionRegister({ register, selectedEventIndex, onEntryCl
         <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em" }}>
           Action Register
         </div>
-        {register.length === 0 && (
+        {onToggleAnalytics ? (
+          <button
+            onClick={onToggleAnalytics}
+            style={{ fontSize: 9, color: "#6366f1", background: "none", border: "none", cursor: "pointer", padding: "1px 4px" }}
+          >
+            Analytics ↗
+          </button>
+        ) : register.length === 0 ? (
           <div style={{ fontSize: 9, color: "#374151" }}>No items yet</div>
-        )}
+        ) : null}
       </div>
 
       {/* Time-travel indicator */}

@@ -32,6 +32,10 @@ export default function Dashboard() {
     assertionResults,
     isTestCase,
     testCaseId,
+    showAnalytics,
+    toggleAnalytics,
+    scenarioAnalytics,
+    allAnalytics,
   } = useScenario(activeScenario);
 
   const events = scenarioData?.events ?? [];
@@ -111,6 +115,11 @@ export default function Dashboard() {
               onReset={handleReset}
               onPlay={playSimulation}
               onPause={pauseSimulation}
+              showAnalytics={showAnalytics}
+              toggleAnalytics={toggleAnalytics}
+              scenarioAnalytics={scenarioAnalytics}
+              allAnalytics={allAnalytics}
+              activeDomainConfig={activeDomainConfig}
             />
           )}
         </div>

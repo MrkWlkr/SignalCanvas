@@ -166,6 +166,14 @@ export interface EvaluationRecord {
   human_decision?: HumanDecision;
   // Snapshot of the action register at this evaluation point — enables time-travel filtering
   registerSnapshot?: ActionRegisterEntry[];
+  usage_metadata?: {
+    tokens_input: number;
+    tokens_output: number;
+    tokens_total: number;
+    latency_ms: number;
+    model: string;
+    cost_estimate: number;
+  };
 }
 
 export interface PendingIntervention {

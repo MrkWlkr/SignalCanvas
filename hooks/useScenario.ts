@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { ScenarioApiResponse, StateApiResponse, EvaluatorOutput, ActionRegisterEntry, AssertionResult } from "@/types";
 import type { InterventionOption, DomainConfig } from "@/lib/domain-config";
 import { getConfigForScenario } from "@/lib/config-registry";
+import {
+  deriveScenarioAnalytics,
+  deriveAllAnalytics,
+  type ScenarioAnalytics,
+  type AllAnalytics,
+} from "@/lib/analytics";
 
 export interface PendingInterventionState {
   evaluation: EvaluatorOutput;
@@ -21,6 +27,8 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     useState<PendingInterventionState | null>(null);
   const [currentPath, setCurrentPath] = useState("default");
   const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [scenarioStateCache, setScenarioStateCache] = useState<Record<string, StateApiResponse>>({});
   const activeDomainConfig: DomainConfig = useMemo(
     () => getConfigForScenario(scenarioId),
     [scenarioId]
@@ -67,6 +75,7 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
       const res = await fetch(`/api/state?scenarioId=${scenarioId}`);
       const data: StateApiResponse = await res.json();
       setStateData(data);
+      setScenarioStateCache((prev) => ({ ...prev, [scenarioId]: data }));
       return data;
     } catch (e) {
       setError("Failed to load state");
@@ -266,6 +275,21 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
   const isTestCase = activeDomainConfig.isTestCase ?? false;
   const testCaseId = activeDomainConfig.testCaseId ?? null;
 
+  const toggleAnalytics = useCallback(() => setShowAnalytics((prev) => !prev), []);
+
+  const scenarioAnalytics: ScenarioAnalytics | null = useMemo(
+    () => (stateData ? deriveScenarioAnalytics(stateData, activeDomainConfig) : null),
+    [stateData, activeDomainConfig]
+  );
+
+  const allAnalytics: AllAnalytics | null = useMemo(
+    () =>
+      Object.keys(scenarioStateCache).length > 0
+        ? deriveAllAnalytics(scenarioStateCache)
+        : null,
+    [scenarioStateCache]
+  );
+
   return {
     scenarioData,
     stateData,
@@ -289,5 +313,9 @@ export function useScenario(scenarioId = "SCENARIO_ESCALATING") {
     assertionResults,
     isTestCase,
     testCaseId,
+    showAnalytics,
+    toggleAnalytics,
+    scenarioAnalytics,
+    allAnalytics,
   };
 }

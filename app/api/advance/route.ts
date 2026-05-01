@@ -17,6 +17,7 @@ import {
   getActionRegister,
 } from "@/lib/state";
 import { evaluateAssertions } from "@/lib/configs/test-suite-config";
+import { estimateCost } from "@/lib/usage";
 import type { AssertionResult } from "@/types";
 import type {
   EvaluatorOutput,
@@ -392,6 +393,8 @@ Using the baseline profile above and the available tools, investigate the impact
 
   const toolCallTrace: ToolCallTrace[] = [];
   let finalEvaluation: EvaluatorOutput | null = null;
+  let lastApiResponse: Awaited<ReturnType<typeof client.messages.create>> | null = null;
+  const callStartTime = Date.now();
 
   while (true) {
     const response = await client.messages.create({
@@ -401,6 +404,7 @@ Using the baseline profile above and the available tools, investigate the impact
       tools: (domainConfig.id === "ops" ? TOOL_DEFINITIONS_OPS : TOOL_DEFINITIONS) as unknown as Anthropic.Tool[],
       messages,
     });
+    lastApiResponse = response;
 
     const toolUseBlocks = response.content.filter(
       (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
@@ -469,6 +473,18 @@ Using the baseline profile above and the available tools, investigate the impact
     return NextResponse.json({ error: "Agent returned no evaluation" }, { status: 500 });
   }
 
+  // ── Usage metadata ────────────────────────────────────────────────────────
+  const tokensIn = lastApiResponse?.usage?.input_tokens ?? 0;
+  const tokensOut = lastApiResponse?.usage?.output_tokens ?? 0;
+  const usage_metadata = {
+    tokens_input: tokensIn,
+    tokens_output: tokensOut,
+    tokens_total: tokensIn + tokensOut,
+    latency_ms: Date.now() - callStartTime,
+    model: "claude-sonnet-4-6",
+    cost_estimate: estimateCost(tokensIn, tokensOut),
+  };
+
   // ── Threshold evaluation ──────────────────────────────────────────────────
   const requiresIntervention = evaluateInterventionThresholds(
     finalEvaluation,
@@ -501,6 +517,7 @@ Using the baseline profile above and the available tools, investigate the impact
       tool_trace: toolCallTrace,
       status: "pending_human_review",
       path: currentPath,
+      usage_metadata,
     };
 
     const pending: PendingIntervention = {
@@ -546,6 +563,7 @@ Using the baseline profile above and the available tools, investigate the impact
     tool_trace: toolCallTrace,
     status: "autonomous",
     path: currentPath,
+    usage_metadata,
   };
 
   const updatedState = recordEvaluation(scenarioId, totalEvents, record);

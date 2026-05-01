@@ -3,6 +3,9 @@
 import type { ScenarioApiResponse, StateApiResponse, ActionRegisterEntry } from "@/types";
 import { formatEventType, getRiskColors, riskBorderHex } from "@/components/ui";
 import ActionRegister from "@/components/ActionRegister";
+import ScenarioAnalyticsPanel from "@/components/ScenarioAnalyticsPanel";
+import type { DomainConfig } from "@/lib/domain-config";
+import type { ScenarioAnalytics, AllAnalytics } from "@/lib/analytics";
 
 const MOBILITY_SCENARIOS = [
   { id: "SCENARIO_ESCALATING", label: "Alex Carter", descriptor: "Assignment risk escalation" },
@@ -34,6 +37,11 @@ interface Props {
   onReset: () => void;
   onPlay: () => void;
   onPause: () => void;
+  showAnalytics: boolean;
+  toggleAnalytics: () => void;
+  scenarioAnalytics: ScenarioAnalytics | null;
+  allAnalytics: AllAnalytics | null;
+  activeDomainConfig: DomainConfig;
 }
 
 // Human-readable path labels — purely display, no domain logic
@@ -59,6 +67,11 @@ export default function ScenarioPanel({
   onReset,
   onPlay,
   onPause,
+  showAnalytics,
+  toggleAnalytics,
+  scenarioAnalytics,
+  allAnalytics,
+  activeDomainConfig,
 }: Props) {
   const employee = scenarioData?.employee;
   const scenario = scenarioData?.scenario;
@@ -301,13 +314,36 @@ export default function ScenarioPanel({
         </div>
       )}
 
-      {/* Action Register */}
+      {/* Action Register / Analytics */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
-        <ActionRegister
-          register={actionRegister}
-          selectedEventIndex={selectedEventIndex}
-          onEntryClick={onRegisterEntryClick}
-        />
+        {showAnalytics ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", borderBottom: "1px solid #1f2937" }}>
+              <span style={{ fontSize: 9, color: "#818cf8", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+                Scenario Analytics
+              </span>
+              <button
+                onClick={toggleAnalytics}
+                style={{ fontSize: 9, color: "#6366f1", background: "none", border: "none", cursor: "pointer", padding: "1px 4px" }}
+              >
+                ← Register
+              </button>
+            </div>
+            <ScenarioAnalyticsPanel
+              analytics={scenarioAnalytics}
+              allAnalytics={allAnalytics}
+              activeDomainConfig={activeDomainConfig}
+              onClose={toggleAnalytics}
+            />
+          </>
+        ) : (
+          <ActionRegister
+            register={actionRegister}
+            selectedEventIndex={selectedEventIndex}
+            onEntryClick={onRegisterEntryClick}
+            onToggleAnalytics={toggleAnalytics}
+          />
+        )}
       </div>
 
       {/* Progress */}
