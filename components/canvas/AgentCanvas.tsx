@@ -17,6 +17,7 @@ import { SourceNode } from "@/components/canvas/SourceNode";
 import { HumanDecisionNode } from "@/components/canvas/HumanDecisionNode";
 import { KpiLine } from "@/components/canvas/KpiLine";
 import { NodeDetailDrawer } from "@/components/canvas/NodeDetailDrawer";
+import { HumanDecisionDrawer } from "@/components/canvas/HumanDecisionDrawer";
 import InterventionCard from "@/components/InterventionCard";
 import {
   buildSpineNodes,
@@ -27,7 +28,7 @@ import {
 } from "@/lib/canvas-data";
 import { riskBorderHex, getRiskColors, formatEventType } from "@/components/ui";
 import type { DomainConfig } from "@/lib/domain-config";
-import type { EvaluationRecord, SignalEvent } from "@/types";
+import type { EvaluationRecord, SignalEvent, HumanDecision } from "@/types";
 import type { PendingInterventionState } from "@/hooks/useScenario";
 
 // ── Node types must be defined outside the component to prevent re-renders ───
@@ -108,6 +109,7 @@ export function AgentCanvas({
   onSelectEvent,
 }: AgentCanvasProps) {
   const [selectedSpineId, setSelectedSpineId] = useState<string | null>(null);
+  const [selectedHumanNodeId, setSelectedHumanNodeId] = useState<string | null>(null);
   const [openSourceId, setOpenSourceId] = useState<string | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, zoom: 1 });
   const [containerSize, setContainerSize] = useState({ width: 800, height: 500 });
@@ -164,9 +166,10 @@ export function AgentCanvas({
       buildHumanDecisionNodes(
         evaluations,
         spineNodes.map((n) => ({ id: n.id, x: n.position.x })),
-        nodeSpacingPx
+        nodeSpacingPx,
+        selectedHumanNodeId
       ),
-    [evaluations, spineNodes, nodeSpacingPx]
+    [evaluations, spineNodes, nodeSpacingPx, selectedHumanNodeId]
   );
 
   const allNodes = useMemo(
@@ -196,6 +199,7 @@ export function AgentCanvas({
     if (node.type === "spineNode") {
       const isDeselecting = selectedSpineId === node.id;
       setSelectedSpineId((prev) => (prev === node.id ? null : node.id));
+      setSelectedHumanNodeId(null);
       setOpenSourceId(null);
       const record = evaluations.find((r) => r.event_id === node.id);
       if (record) {
@@ -203,11 +207,17 @@ export function AgentCanvas({
       }
     } else if (node.type === "sourceNode") {
       setOpenSourceId((prev) => (prev === node.id ? null : node.id));
+    } else if (node.type === "humanDecisionNode") {
+      setSelectedHumanNodeId((prev) => (prev === node.id ? null : node.id));
+      setSelectedSpineId(null);
+      setOpenSourceId(null);
+      onSelectEvent(null);
     }
   }, [selectedSpineId, evaluations, onSelectEvent]);
 
   const handlePaneClick = useCallback(() => {
     setSelectedSpineId(null);
+    setSelectedHumanNodeId(null);
     setOpenSourceId(null);
     onSelectEvent(null);
   }, [onSelectEvent]);
@@ -231,8 +241,17 @@ export function AgentCanvas({
     ? (events.find((e) => e.event_id === selectedSpineId) ?? null)
     : null;
 
-  // Hide drawer when intervention card is showing
+  // Derive HumanDecision from the selected human node id (e.g. "human-2" → event_index 2)
+  const selectedHumanDecision: HumanDecision | null = useMemo(() => {
+    if (!selectedHumanNodeId) return null;
+    const idx = parseInt(selectedHumanNodeId.replace("human-", ""), 10);
+    const record = evaluations.find((r) => r.event_index === idx);
+    return record?.human_decision ?? null;
+  }, [selectedHumanNodeId, evaluations]);
+
+  // Hide drawers when intervention card is showing
   const drawerOpen = selectedRecord !== null && pendingIntervention === null;
+  const humanDrawerOpen = selectedHumanDecision !== null && pendingIntervention === null;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -392,6 +411,16 @@ export function AgentCanvas({
           config={config}
           scenarioId={scenarioId}
           onClose={() => { setSelectedSpineId(null); onSelectEvent(null); }}
+        />
+      )}
+
+      {/* ── Human decision drawer — slides in from right ──────────────────── */}
+      {humanDrawerOpen && selectedHumanDecision && (
+        <HumanDecisionDrawer
+          decision={selectedHumanDecision}
+          config={config}
+          scenarioId={scenarioId}
+          onClose={() => setSelectedHumanNodeId(null)}
         />
       )}
 

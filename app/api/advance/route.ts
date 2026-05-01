@@ -507,6 +507,7 @@ Using the baseline profile above and the available tools, investigate the impact
       event_id: event.event_id,
       event_index: eventIndex,
       evaluation: finalEvaluation,
+      triggered_at: new Date().toISOString(),
     };
 
     const pendingState = recordPendingIntervention(scenarioId, totalEvents, record, pending);

@@ -122,6 +122,27 @@ export interface EvaluatorOutput {
 export interface HumanDecision {
   option_id: string;
   option_label: string;
+  path_result: string | null;
+
+  // Timing audit trail
+  intervention_triggered_at: string;
+  decision_recorded_at: string;
+  simulated_response_minutes: number;
+
+  // What the human was shown
+  situation_summary: string;
+  impact_magnitude: string;
+  reversibility: string;
+  human_review_reason: string;
+  options_presented: number;
+  options_enabled: number;
+
+  // What changed as a result
+  register_items_resolved: string[];
+  path_switched: boolean;
+  path_name: string | null;
+
+  // Legacy fields kept for backward compat
   decision_id?: string;
   modified_actions?: string[];
   timestamp: string;
@@ -151,6 +172,7 @@ export interface PendingIntervention {
   event_id: string;
   event_index: number;
   evaluation: EvaluatorOutput;
+  triggered_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

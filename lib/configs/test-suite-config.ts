@@ -131,6 +131,12 @@ export const TC002_ASSERTIONS: AssertionDefinition[] = [
 
 // ─── DOMAIN CONFIGS ─────────────────────────────────────────────
 
+const testInterventionOptions = mobilityConfig.interventionOptions.map((opt) =>
+  opt.id === "approve"
+    ? { ...opt, simulated_response_time_minutes: [6, 18] as [number, number] }
+    : opt
+);
+
 export const tc001Config: DomainConfig = {
   ...mobilityConfig,
   id: "test",
@@ -142,6 +148,7 @@ export const tc001Config: DomainConfig = {
   testCaseDescription: "Validates agent triggers human review at correct threshold — not on single signals (false positive) and not after cascade has begun (missed escalation).",
   propertyUnderTest: "Human review trigger accuracy",
   assertions: TC001_ASSERTIONS,
+  interventionOptions: testInterventionOptions,
   timeline: {
     ...mobilityConfig.timeline,
     monitoringStartDates: {
@@ -166,6 +173,7 @@ export const tc002Config: DomainConfig = {
   testCaseDescription: "Validates agent correctly identifies when a prior human-required action was not taken, references the original recommendation ID in missed_prior_actions, and traces the downstream cascade to its root cause.",
   propertyUnderTest: "Audit trail integrity and missed action detection",
   assertions: TC002_ASSERTIONS,
+  interventionOptions: testInterventionOptions,
   timeline: {
     ...mobilityConfig.timeline,
     monitoringStartDates: {

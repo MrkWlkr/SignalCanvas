@@ -38,6 +38,7 @@ export interface InterventionOption {
   path: string | null;
   enabled_in_demo: boolean;
   style: "primary" | "secondary" | "destructive";
+  simulated_response_time_minutes: [number, number];
 }
 
 export interface ScenarioPaths {
@@ -74,6 +75,21 @@ export interface DomainConfig {
   testCaseDescription?: string;
   propertyUnderTest?: string;
   assertions?: AssertionDefinition[];
+  // Counterfactual outcomes — what would have happened without the human decision
+  counterfactuals?: {
+    [scenarioId: string]: {
+      defaultPathOutcome: {
+        final_risk_level: string;
+        final_confidence: number;
+        key_consequences: string[];
+      };
+      resolvedPathOutcome: {
+        final_risk_level: string;
+        final_confidence: number;
+        key_resolution: string;
+      };
+    };
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,6 +200,7 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
       path: "intervention_resolved",
       enabled_in_demo: true,
       style: "primary",
+      simulated_response_time_minutes: [8, 22] as [number, number],
     },
     {
       id: "override",
@@ -193,6 +210,7 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
       path: null,
       enabled_in_demo: true,
       style: "secondary",
+      simulated_response_time_minutes: [2, 8] as [number, number],
     },
     {
       id: "escalate",
@@ -201,6 +219,7 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
       path: null,
       enabled_in_demo: false,
       style: "secondary",
+      simulated_response_time_minutes: [12, 35] as [number, number],
     },
     {
       id: "modify",
@@ -209,6 +228,7 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
       path: null,
       enabled_in_demo: false,
       style: "secondary",
+      simulated_response_time_minutes: [15, 40] as [number, number],
     },
   ],
 
@@ -259,6 +279,26 @@ risk_level (low/medium/high/critical), confidence (0.0-1.0), affected_domains (a
     },
     deadlineLabel: "Days until assignment start",
     deadlineField: "days_to_start",
+  },
+
+  counterfactuals: {
+    SCENARIO_ESCALATING: {
+      defaultPathOutcome: {
+        final_risk_level: "critical",
+        final_confidence: 0.94,
+        key_consequences: [
+          "req_001 marked MISSED — document never submitted",
+          "Payroll setup blocked at Day 35",
+          "Start date jeopardy confirmed at Day 42",
+          "Attorney confirmed start date mathematically unachievable",
+        ],
+      },
+      resolvedPathOutcome: {
+        final_risk_level: "low",
+        final_confidence: 0.97,
+        key_resolution: "All compliance domains cleared — assignment proceeded on schedule",
+      },
+    },
   },
 
 };

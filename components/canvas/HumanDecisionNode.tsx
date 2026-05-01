@@ -7,10 +7,12 @@ import type { HumanDecisionNodeData } from "@/lib/canvas-data";
 // Amber tint = manual override (default path); green tint = intervention resolved path.
 
 export function HumanDecisionNode({ data }: { data: HumanDecisionNodeData }) {
-  const { optionLabel, pathSwitched, dayOffset } = data;
+  const { optionLabel, pathSwitched, dayOffset, isSelected } = data;
 
   const bg = pathSwitched ? "#052e16" : "#451a03";
-  const border = pathSwitched ? "#166534" : "#92400e";
+  const border = isSelected
+    ? (pathSwitched ? "#4ade80" : "#fbbf24")
+    : (pathSwitched ? "#166534" : "#92400e");
   const labelColor = pathSwitched ? "#4ade80" : "#fbbf24";
   const headerColor = pathSwitched ? "#16a34a" : "#d97706";
 
@@ -23,7 +25,7 @@ export function HumanDecisionNode({ data }: { data: HumanDecisionNodeData }) {
           width: 120,
           height: 64,
           background: bg,
-          border: `1.5px solid ${border}`,
+          border: `${isSelected ? 2 : 1.5}px solid ${border}`,
           borderRadius: 6,
           display: "flex",
           flexDirection: "column",
@@ -31,7 +33,8 @@ export function HumanDecisionNode({ data }: { data: HumanDecisionNodeData }) {
           justifyContent: "center",
           padding: "6px 8px",
           clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-          cursor: "default",
+          cursor: "pointer",
+          boxShadow: isSelected ? `0 0 0 2px ${pathSwitched ? "#4ade80" : "#fbbf24"}40` : "none",
         }}
       >
         <div style={{ fontSize: 8, color: headerColor, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>

@@ -137,7 +137,8 @@ Output ONLY valid JSON. No prose before or after.`,
       description: "Deploy PR-4475 fix to price-stack-mapper.ts. Preserves other PR-4471 changes. Estimated 20 minutes to deploy and re-process affected records.",
       path: "intervention_resolved",
       enabled_in_demo: true,
-      style: "primary"
+      style: "primary",
+      simulated_response_time_minutes: [10, 25] as [number, number],
     },
     {
       id: "approve_rollback",
@@ -145,7 +146,8 @@ Output ONLY valid JSON. No prose before or after.`,
       description: "Revert price-stack-service to pre-PR-4471. Safer but reverts 2 unrelated bug fixes. Larger data repair scope.",
       path: null,
       enabled_in_demo: true,
-      style: "secondary"
+      style: "secondary",
+      simulated_response_time_minutes: [5, 15] as [number, number],
     },
     {
       id: "escalate",
@@ -153,7 +155,8 @@ Output ONLY valid JSON. No prose before or after.`,
       description: "Route decision to engineering director with full context",
       path: null,
       enabled_in_demo: false,
-      style: "secondary"
+      style: "secondary",
+      simulated_response_time_minutes: [12, 35] as [number, number],
     },
     {
       id: "investigate_further",
@@ -161,7 +164,8 @@ Output ONLY valid JSON. No prose before or after.`,
       description: "Request additional signal gathering before deciding",
       path: null,
       enabled_in_demo: false,
-      style: "secondary"
+      style: "secondary",
+      simulated_response_time_minutes: [15, 40] as [number, number],
     }
   ],
 
@@ -215,5 +219,26 @@ Output ONLY valid JSON. No prose before or after.`,
       get_sla_status:           "SLA Monitor",
       get_affected_accounts:    "Account Database"
     }
-  }
+  },
+
+  counterfactuals: {
+    SCENARIO_DEALER_PRICING: {
+      defaultPathOutcome: {
+        final_risk_level: "critical",
+        final_confidence: 0.93,
+        key_consequences: [
+          "Issue escalated to P1 — no action taken in time",
+          "Emergency full rollback required",
+          "18,000+ records needed repair vs 3,847",
+          "Financial reconciliation investigation triggered",
+          "Two unrelated bug fixes lost in rollback",
+        ],
+      },
+      resolvedPathOutcome: {
+        final_risk_level: "low",
+        final_confidence: 0.98,
+        key_resolution: "Targeted patch deployed — 3,847 records repaired, bug fixes preserved, incident closed in 74 minutes",
+      },
+    },
+  },
 }

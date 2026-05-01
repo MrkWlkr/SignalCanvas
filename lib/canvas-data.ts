@@ -7,7 +7,7 @@
 
 import type { Node, Edge } from "reactflow";
 import { MarkerType } from "reactflow";
-import type { EvaluationRecord, ToolCallTrace, SignalEvent } from "@/types";
+import type { EvaluationRecord, ToolCallTrace, SignalEvent, HumanDecision } from "@/types";
 import type { DomainConfig } from "@/lib/domain-config";
 import { riskBorderHex, riskStroke } from "@/components/ui";
 import { formatEventDate } from "@/lib/dates";
@@ -53,6 +53,9 @@ export interface HumanDecisionNodeData {
   optionChosen: string;
   dayOffset?: number;
   pathSwitched: boolean;
+  decision: HumanDecision;
+  eventIndex: number;
+  isSelected: boolean;
 }
 
 // ── Key result extraction ─────────────────────────────────────────────────────
@@ -374,7 +377,8 @@ export function buildSourceNodes(
 export function buildHumanDecisionNodes(
   evaluations: EvaluationRecord[],
   spinePositions: { id: string; x: number }[],
-  nodeSpacingPx: number
+  nodeSpacingPx: number,
+  selectedHumanNodeId: string | null = null
 ): Node<HumanDecisionNodeData>[] {
   const posMap = new Map(spinePositions.map((p) => [p.id, p.x]));
 
@@ -383,18 +387,21 @@ export function buildHumanDecisionNodes(
     .map((record) => {
       const decision = record.human_decision!;
       const spineX = posMap.get(record.event_id) ?? 0;
-      // Human decision nodes sit above spine, between this node and the previous one
-      const x = spineX - nodeSpacingPx / 2 + (SPINE_NODE_WIDTH / 2) - 60; // center 120px node
+      const x = spineX - nodeSpacingPx / 2 + (SPINE_NODE_WIDTH / 2) - 60;
       const y = SPINE_Y + HUMAN_Y_OFFSET;
+      const nodeId = `human-${record.event_index}`;
 
       return {
-        id: `human-${record.event_index}`,
+        id: nodeId,
         type: "humanDecisionNode",
         position: { x, y },
         data: {
           optionLabel: decision.option_label,
           optionChosen: decision.option_id,
           pathSwitched: record.path === "intervention_resolved",
+          decision,
+          eventIndex: record.event_index,
+          isSelected: nodeId === selectedHumanNodeId,
         },
       };
     });

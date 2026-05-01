@@ -37,6 +37,16 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Deterministic seeded random — same event_id always yields same response time
+function seededRandom(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) / 2147483647;
+}
+
 // POST /api/intervene
 // Handles the human's response to a pending intervention.
 // Reads all option behaviour from domainConfig — zero domain-specific logic here.
@@ -89,13 +99,34 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Build the human decision record
+  // 3. Build the full human decision record
+  const now = new Date().toISOString();
+  const triggeredAt = currentState.pendingIntervention!.triggered_at ?? now;
+  const [minMins, maxMins] = option.simulated_response_time_minutes;
+  const rng = seededRandom(currentState.pendingIntervention!.event_id);
+  const simulatedResponseMinutes = Math.round(minMins + rng * (maxMins - minMins));
+  const pendingEvalForDecision = currentState.pendingIntervention!.evaluation;
+  const enabledOptions = domainConfig.interventionOptions.filter((o) => o.enabled_in_demo);
   const humanDecision: HumanDecision = {
     option_id: option.id,
     option_label: option.label,
+    path_result: option.path,
+    intervention_triggered_at: triggeredAt,
+    decision_recorded_at: now,
+    simulated_response_minutes: simulatedResponseMinutes,
+    situation_summary: pendingEvalForDecision.reasoning_summary,
+    impact_magnitude: pendingEvalForDecision.impact_magnitude,
+    reversibility: pendingEvalForDecision.reversibility,
+    human_review_reason: pendingEvalForDecision.human_review_reason,
+    options_presented: domainConfig.interventionOptions.length,
+    options_enabled: enabledOptions.length,
+    register_items_resolved: pendingEvalForDecision.human_actions_required.map((r) => r.id),
+    path_switched: option.path !== null,
+    path_name: option.path,
+    // legacy
     decision_id: decision_id,
     modified_actions: modified_actions,
-    timestamp: new Date().toISOString(),
+    timestamp: now,
   };
 
   // 4. Determine new path and compute new totalEvents for that path
@@ -138,12 +169,11 @@ export async function POST(request: NextRequest) {
   }
 
   // 6. If human approved, mark the pending human_actions_required as resolved
-  const pendingEval = pendingIntervention.evaluation;
-  if (option_id === "approve" && pendingEval.human_actions_required.length > 0) {
-    const humanResolvedIds = pendingEval.human_actions_required.map((r) => r.id);
+  if (option_id === "approve" && pendingEvalForDecision.human_actions_required.length > 0) {
+    const humanResolvedIds = pendingEvalForDecision.human_actions_required.map((r) => r.id);
     updateActionRegister(
       scenarioId,
-      pendingEval,
+      pendingEvalForDecision,
       pendingIntervention.event_index,
       eventDate,
       humanResolvedIds
