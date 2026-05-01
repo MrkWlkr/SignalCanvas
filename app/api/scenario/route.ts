@@ -29,6 +29,32 @@ export async function GET(request: NextRequest) {
   const signalEvents = loadSignalEventsFromPath(eventsFilePath);
   const events = signalEvents.filter((e) => e.scenario_id === scenarioId);
 
+  // ── Test domain ───────────────────────────────────────────────────────────
+  if (domainConfig.id === "test") {
+    const primaryEntity: PrimaryEntity = {
+      name: "Behavioral Test Suite",
+      subtitle: domainConfig.scenarioLabel,
+      tags: [domainConfig.testCaseId ?? "Test", "Behavioral Eval"],
+      meta: [
+        { label: "Test case", value: domainConfig.testCaseId ?? "—" },
+        { label: "Signals", value: `${events.length}` },
+      ],
+    };
+
+    return NextResponse.json({
+      scenario: {
+        id: scenarioId,
+        label: domainConfig.scenarioLabel,
+        employee_name: "Behavioral Test Suite",
+        route: "",
+        start_date: "",
+        duration_days: 0,
+      },
+      events,
+      primary_entity: primaryEntity,
+    });
+  }
+
   // ── Ops domain ────────────────────────────────────────────────────────────
   if (domainConfig.id === "ops") {
     const primaryEntity: PrimaryEntity = {

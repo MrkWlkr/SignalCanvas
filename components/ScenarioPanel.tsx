@@ -174,8 +174,8 @@ export default function ScenarioPanel({
         </div>
       </div>
 
-      {/* Entity card */}
-      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+      {/* Entity card — hidden for test/eval scenarios that have no real-world subject */}
+      {activeDomainConfig.id !== "test" && <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
         <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
           {scenarioData?.primary_entity ? "Entity" : "Assignment"}
         </div>
@@ -225,7 +225,7 @@ export default function ScenarioPanel({
         ) : (
           <div className="text-gray-600 text-sm">Loading…</div>
         )}
-      </div>
+      </div>}
 
       {/* Risk level + confidence bar */}
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
@@ -315,7 +315,7 @@ export default function ScenarioPanel({
       )}
 
       {/* Action Register / Analytics */}
-      <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+      <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden flex-shrink-0">
         {showAnalytics ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", borderBottom: "1px solid #1f2937" }}>
