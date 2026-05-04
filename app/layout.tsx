@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 // @ts-ignore — CSS side-effect import
 import "./globals.css";
 
@@ -22,6 +23,7 @@ export default function RootLayout({
           </span>
         </nav>
         <main>{children}</main>
+        <Analytics />
       </body>
     </html>
   );
