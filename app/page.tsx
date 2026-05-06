@@ -53,7 +53,7 @@ function HeroSection() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
           <button
             onClick={scrollToDemo}
-            className="px-7 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-900/40"
+            className="px-7 py-3 bg-blue-400 hover:bg-blue-300 text-gray-950 text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-900/40"
           >
             View live demo →
           </button>
@@ -138,7 +138,7 @@ function FrameworkSection() {
         <div className="text-center">
           <button
             onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors"
+            className="px-8 py-3 bg-blue-400 hover:bg-blue-300 text-gray-950 text-sm font-semibold rounded-lg transition-colors"
           >
             Try the demo →
           </button>
@@ -264,7 +264,7 @@ function CtaSection() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-blue-400 text-white text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-900/40"
+              className="px-8 py-3 bg-blue-400 hover:bg-blue-300 disabled:bg-blue-900 disabled:text-blue-700 text-gray-950 text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-900/40"
             >
               {submitting ? "Sending…" : "Send message →"}
             </button>

@@ -4,6 +4,12 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+  },
   title: "Signal Canvas — Human Oversight for Agentic AI",
   description:
     "Signal Canvas is the observability layer for agentic AI — making agent decisions transparent, traceable, and governable in high-stakes operational environments. Live demo powered by Claude and Next.js.",

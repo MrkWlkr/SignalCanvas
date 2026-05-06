@@ -99,12 +99,12 @@ export default function ScenarioPanel({
               onClick={() => onScenarioChange(s.id)}
               className={`flex-1 text-xs px-3 py-2 rounded-md border transition-colors text-left ${
                 activeScenario === s.id
-                  ? "bg-blue-600 border-blue-500 text-white"
+                  ? "bg-blue-400 border-blue-300 text-gray-950"
                   : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
               }`}
             >
               <div className="font-semibold">{s.label}</div>
-              <div className={`text-xs mt-0.5 ${activeScenario === s.id ? "text-blue-200" : "text-gray-600"}`}>
+              <div className={`text-xs mt-0.5 ${activeScenario === s.id ? "text-gray-800" : "text-gray-600"}`}>
                 {s.descriptor}
               </div>
             </button>
@@ -118,7 +118,7 @@ export default function ScenarioPanel({
               onClick={() => onScenarioChange(s.id)}
               className={`flex-1 text-xs px-3 py-2 rounded-md border transition-colors text-left ${
                 activeScenario === s.id
-                  ? "bg-blue-600 border-blue-500 text-white"
+                  ? "bg-blue-400 border-blue-300 text-gray-950"
                   : "bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
               }`}
             >
@@ -126,7 +126,7 @@ export default function ScenarioPanel({
                 <span className="font-semibold">{s.label}</span>
                 <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-medium leading-none">Ops</span>
               </div>
-              <div className={`text-xs mt-0.5 ${activeScenario === s.id ? "text-blue-200" : "text-gray-600"}`}>
+              <div className={`text-xs mt-0.5 ${activeScenario === s.id ? "text-gray-800" : "text-gray-600"}`}>
                 {s.descriptor}
               </div>
             </button>
@@ -355,7 +355,7 @@ export default function ScenarioPanel({
         </div>
         <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            className="h-full bg-blue-400 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -381,7 +381,7 @@ export default function ScenarioPanel({
           <button
             onClick={onAdvance}
             disabled={advancing || playing || complete || loading || hasPendingIntervention}
-            className="flex-1 py-2.5 px-4 rounded-md text-sm font-semibold bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 px-4 rounded-md text-sm font-semibold bg-blue-400 hover:bg-blue-300 disabled:bg-gray-800 disabled:text-gray-600 text-gray-950 transition-colors flex items-center justify-center gap-2"
           >
             {advancing && !playing ? (
               <>
