@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Dashboard from "@/components/Dashboard";
 
 export default function Home() {
@@ -170,6 +171,41 @@ function FrameworkCard({
 }
 
 function CtaSection() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch("https://formspree.io/f/xdabzrrn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+        setName("");
+        setEmail("");
+        setMessage("");
+      } else {
+        setError("Something went wrong — please try emailing directly");
+      }
+    } catch {
+      setError("Something went wrong — please try emailing directly");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputClass =
+    "w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-500 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white disabled:opacity-50";
+
   return (
     <section className="bg-gray-950 border-t border-gray-800 px-6 py-20">
       <div className="max-w-2xl mx-auto text-center">
@@ -186,12 +222,55 @@ function CtaSection() {
           If you are thinking about AI agent governance, operational observability, or decision
           intelligence in your organization, I would like to hear about it.
         </p>
-        <a
-          href="mailto:wlkr.mrk@gmail.com"
-          className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-900/40"
-        >
-          Get in touch →
-        </a>
+
+        {submitted ? (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <span className="text-4xl text-green-400">✓</span>
+            <p className="text-white font-semibold">Message sent — I&apos;ll be in touch soon.</p>
+            <p className="text-sm text-gray-500">In the meantime, explore the live demo above</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-left">
+            <input
+              type="text"
+              placeholder="Name"
+              required
+              disabled={submitting}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              required
+              disabled={submitting}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+            />
+            <textarea
+              placeholder="Message"
+              required
+              rows={4}
+              disabled={submitting}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className={inputClass}
+            />
+            {error && (
+              <p className="text-sm text-red-400">{error}</p>
+            )}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-blue-400 text-white text-sm font-semibold rounded-lg transition-colors shadow-lg shadow-blue-900/40"
+            >
+              {submitting ? "Sending…" : "Send message →"}
+            </button>
+          </form>
+        )}
+
         <p className="text-xs text-gray-600 mt-6">
           signalcanvas.ai is an independent research and demonstration project.
         </p>
